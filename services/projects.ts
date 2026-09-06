@@ -1,5 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
-import type { Tables, TablesInsert } from "@/types/database";
+import type { Tables, TablesInsert, TablesUpdate } from "@/types/database";
 
 export type Project = Tables<"projects">;
 
@@ -128,4 +128,40 @@ export async function createProject(
     .insert({ ...input, key: input.key.toUpperCase(), created_by: user?.id })
     .select()
     .single();
+}
+
+/** Active, non-privileged users who can be assigned as project members.
+ * Admins and managers already see every project via RLS, so they're
+ * excluded here -- membership rows are only meaningful for the other roles. */
+export async function getMembershipCandidates() {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("profiles")
+    .select("id, full_name, role")
+    .eq("status", "active")
+    .order("full_name");
+  return (data ?? []).filter((p) => p.role !== "admin" && p.role !== "manager");
+}
+
+export async function updateProject(
+  id: string,
+  input: Pick<TablesUpdate<"projects">, "name" | "key" | "description" | "status">,
+) {
+  const supabase = await createClient();
+  return supabase
+    .from("projects")
+    .update({ ...input, key: input.key ? input.key.toUpperCase() : undefined })
+    .eq("id", id)
+    .select()
+    .single();
+}
+
+export async function setProjectMembers(projectId: string, userIds: string[]) {
+  const supabase = await createClient();
+  await supabase.from("project_members").delete().eq("project_id", projectId);
+  if (userIds.length > 0) {
+    await supabase
+      .from("project_members")
+      .insert(userIds.map((user_id) => ({ project_id: projectId, user_id })));
+  }
 }

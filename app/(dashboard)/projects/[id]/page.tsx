@@ -1,11 +1,12 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { Plus } from "lucide-react";
+import { Pencil, Plus } from "lucide-react";
 
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { displayId, getRecentBugsForProject, STATUS_LABELS } from "@/services/bugs";
+import { getCurrentProfile } from "@/services/profile";
 import { getProject } from "@/services/projects";
 
 const statusStyles: Record<string, string> = {
@@ -17,10 +18,11 @@ const statusStyles: Record<string, string> = {
 
 export default async function ProjectDetailPage({ params }: PageProps<"/projects/[id]">) {
   const { id } = await params;
-  const project = await getProject(id);
+  const [project, profile] = await Promise.all([getProject(id), getCurrentProfile()]);
   if (!project) notFound();
 
   const bugs = await getRecentBugsForProject(id);
+  const canEdit = profile?.role === "admin" || profile?.role === "manager";
 
   return (
     <div className="space-y-6">
@@ -38,9 +40,16 @@ export default async function ProjectDetailPage({ params }: PageProps<"/projects
             </p>
           </div>
         </div>
-        <Button render={<Link href="/bugs/new" />}>
-          <Plus /> New Bug
-        </Button>
+        <div className="flex items-center gap-2">
+          {canEdit ? (
+            <Button variant="outline" render={<Link href={`/projects/${project.id}/edit`} />}>
+              <Pencil /> Edit
+            </Button>
+          ) : null}
+          <Button render={<Link href="/bugs/new" />}>
+            <Plus /> New Bug
+          </Button>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">

@@ -1,5 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
-import type { TablesInsert } from "@/types/database";
+import type { TablesInsert, TablesUpdate } from "@/types/database";
 import { STATUS_LABELS, type Bug, type BugLabel, type BugWithRelations } from "@/lib/bug-constants";
 import { notify } from "@/services/notifications";
 
@@ -165,6 +165,59 @@ export async function createBug(input: CreateBugInput) {
   }
 
   return { error: null, bugId: bug.id as string };
+}
+
+type UpdateBugInput = Pick<
+  TablesUpdate<"bugs">,
+  | "title"
+  | "steps_to_reproduce"
+  | "expected_result"
+  | "actual_result"
+  | "additional_context"
+  | "severity"
+  | "priority"
+  | "source"
+  | "assignee_id"
+> & { labels: BugLabel[] };
+
+export async function updateBug(bugId: string, input: UpdateBugInput) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "Not signed in." };
+
+  const { labels, ...bugFields } = input;
+
+  const { data: previous } = await supabase
+    .from("bugs")
+    .select("assignee_id")
+    .eq("id", bugId)
+    .single();
+
+  const { error } = await supabase.from("bugs").update(bugFields).eq("id", bugId);
+  if (error) return { error: "Couldn't update bug." };
+
+  await supabase.from("bug_labels").delete().eq("bug_id", bugId);
+  if (labels.length > 0) {
+    await supabase.from("bug_labels").insert(labels.map((label) => ({ bug_id: bugId, label })));
+  }
+
+  await supabase
+    .from("bug_activity")
+    .insert({ bug_id: bugId, actor_id: user.id, action: "edited this bug" });
+
+  if (bugFields.assignee_id && bugFields.assignee_id !== previous?.assignee_id) {
+    await notify({
+      recipientId: bugFields.assignee_id,
+      actorId: user.id,
+      type: "bug_assigned",
+      message: `You were assigned to "${bugFields.title}".`,
+      bugId,
+    });
+  }
+
+  return { error: null };
 }
 
 export async function addComment(bugId: string, body: string) {

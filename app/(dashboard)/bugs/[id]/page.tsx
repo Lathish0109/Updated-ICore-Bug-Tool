@@ -1,8 +1,10 @@
-import { History, Paperclip } from "lucide-react";
+import Link from "next/link";
+import { History, Paperclip, Pencil } from "lucide-react";
 import { notFound } from "next/navigation";
 
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { CommentForm } from "@/components/shared/comment-form";
 import { StatusSelect } from "@/components/shared/status-select";
 import { formatRelativeTime } from "@/lib/format";
@@ -16,10 +18,11 @@ import {
   SEVERITY_LABELS,
   SOURCE_LABELS,
 } from "@/services/bugs";
+import { getCurrentProfile } from "@/services/profile";
 
 export default async function BugDetailPage({ params }: PageProps<"/bugs/[id]">) {
   const { id } = await params;
-  const bug = await getBug(id);
+  const [bug, profile] = await Promise.all([getBug(id), getCurrentProfile()]);
   if (!bug) notFound();
 
   const [comments, activity, attachments] = await Promise.all([
@@ -27,6 +30,13 @@ export default async function BugDetailPage({ params }: PageProps<"/bugs/[id]">)
     getBugActivity(id),
     getBugAttachments(id),
   ]);
+
+  const canEdit =
+    !!profile &&
+    (profile.role === "admin" ||
+      profile.role === "manager" ||
+      ((profile.role === "developer" || profile.role === "tester") &&
+        (bug.assignee_id === profile.id || bug.reporter_id === profile.id)));
 
   return (
     <div className="max-w-4xl space-y-6">
@@ -50,7 +60,14 @@ export default async function BugDetailPage({ params }: PageProps<"/bugs/[id]">)
             </div>
           ) : null}
         </div>
-        <StatusSelect bugId={bug.id} status={bug.status} />
+        <div className="flex items-center gap-2">
+          {canEdit ? (
+            <Button variant="outline" size="sm" render={<Link href={`/bugs/${bug.id}/edit`} />}>
+              <Pencil /> Edit
+            </Button>
+          ) : null}
+          <StatusSelect bugId={bug.id} status={bug.status} />
+        </div>
       </div>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-4">

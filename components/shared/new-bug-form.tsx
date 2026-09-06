@@ -18,9 +18,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import type { BugLabel } from "@/lib/bug-constants";
-
-import { createBugFormAction } from "@/app/(dashboard)/bugs/new/actions";
+import type { BugLabel, Bug } from "@/lib/bug-constants";
 
 const availableLabels: BugLabel[] = [
   "UI",
@@ -33,17 +31,42 @@ const availableLabels: BugLabel[] = [
   "Regression",
 ];
 
+type FormState = { error?: string } | undefined;
+
+export type BugFormValues = {
+  title: string;
+  projectId: string;
+  projectName?: string;
+  source: Bug["source"];
+  severity: Bug["severity"];
+  priority: Bug["priority"];
+  assigneeId: string;
+  labels: BugLabel[];
+  steps: string;
+  expected: string;
+  actual: string;
+  context: string;
+};
+
 export function NewBugForm({
+  mode = "create",
   projects,
   assignees,
+  defaultValues,
+  backHref = "/bugs",
+  action,
 }: {
+  mode?: "create" | "edit";
   projects: { id: string; name: string }[];
   assignees: { id: string; full_name: string }[];
+  defaultValues?: BugFormValues;
+  backHref?: string;
+  action: (prevState: FormState, formData: FormData) => Promise<FormState>;
 }) {
   const router = useRouter();
-  const [state, formAction, pending] = useActionState(createBugFormAction, undefined);
+  const [state, formAction, pending] = useActionState(action, undefined);
   const [files, setFiles] = useState<File[]>([]);
-  const [labels, setLabels] = useState<BugLabel[]>([]);
+  const [labels, setLabels] = useState<BugLabel[]>(defaultValues?.labels ?? []);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Every Select field below is fully controlled with its own explicit
@@ -51,11 +74,11 @@ export function NewBugForm({
   // name-based form participation -- same reliable pattern already used
   // for Labels. Guarantees FormData has the right value on submit
   // regardless of Select internals.
-  const [project, setProject] = useState("");
-  const [source, setSource] = useState("manual");
-  const [severity, setSeverity] = useState("");
-  const [priority, setPriority] = useState("p2");
-  const [assignee, setAssignee] = useState("unassigned");
+  const [project, setProject] = useState(defaultValues?.projectId ?? "");
+  const [source, setSource] = useState(defaultValues?.source ?? "manual");
+  const [severity, setSeverity] = useState(defaultValues?.severity ?? "");
+  const [priority, setPriority] = useState(defaultValues?.priority ?? "p2");
+  const [assignee, setAssignee] = useState(defaultValues?.assigneeId ?? "unassigned");
 
   function syncInputFiles(next: File[]) {
     const dt = new DataTransfer();
@@ -91,26 +114,33 @@ export function NewBugForm({
     );
   }
 
+  const isEdit = mode === "edit";
+
   return (
     <div className="max-w-3xl space-y-6">
       <div className="flex items-start justify-between">
         <div>
           <p className="text-muted-foreground text-sm">
-            <span>Bugs</span> <span className="mx-1">&gt;</span> <span>Create New</span>
+            <span>Bugs</span> <span className="mx-1">&gt;</span>
+            <span>{isEdit ? "Edit" : "Create New"}</span>
           </p>
-          <h1 className="text-2xl font-semibold tracking-tight">Report New Issue</h1>
+          <h1 className="text-2xl font-semibold tracking-tight">
+            {isEdit ? "Edit Issue" : "Report New Issue"}
+          </h1>
         </div>
         <div className="flex gap-2">
-          <Button type="button" variant="outline" onClick={() => router.push("/bugs")}>
+          <Button type="button" variant="outline" onClick={() => router.push(backHref)}>
             Cancel
           </Button>
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => toast.info("Draft saving isn't available yet")}
-          >
-            <Save /> Save Draft
-          </Button>
+          {!isEdit ? (
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => toast.info("Draft saving isn't available yet")}
+            >
+              <Save /> Save Draft
+            </Button>
+          ) : null}
         </div>
       </div>
 
@@ -121,6 +151,7 @@ export function NewBugForm({
             id="title"
             name="title"
             placeholder="e.g., Application crashes on login with special characters"
+            defaultValue={defaultValues?.title}
             required
           />
         </div>
@@ -128,29 +159,37 @@ export function NewBugForm({
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div className="space-y-1.5">
             <Label htmlFor="project">Project *</Label>
-            <Select
-              value={project}
-              onValueChange={(v) => setProject((v as string) ?? "")}
-              items={Object.fromEntries(projects.map((p) => [p.id, p.name]))}
-            >
-              <SelectTrigger id="project" className="w-full">
-                <SelectValue placeholder="Select Project..." />
-              </SelectTrigger>
-              <SelectContent>
-                {projects.map((p) => (
-                  <SelectItem key={p.id} value={p.id}>
-                    {p.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <input type="hidden" name="project" value={project} />
+            {isEdit ? (
+              <p className="border-border bg-muted text-muted-foreground rounded-md border px-3 py-2 text-sm">
+                {defaultValues?.projectName ?? "Unknown project"}
+              </p>
+            ) : (
+              <>
+                <Select
+                  value={project}
+                  onValueChange={(v) => setProject((v as string) ?? "")}
+                  items={Object.fromEntries(projects.map((p) => [p.id, p.name]))}
+                >
+                  <SelectTrigger id="project" className="w-full">
+                    <SelectValue placeholder="Select Project..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {projects.map((p) => (
+                      <SelectItem key={p.id} value={p.id}>
+                        {p.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <input type="hidden" name="project" value={project} />
+              </>
+            )}
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="source">Bug Source</Label>
             <Select
               value={source}
-              onValueChange={(v) => setSource((v as string) ?? "manual")}
+              onValueChange={(v) => setSource((v as Bug["source"]) ?? "manual")}
               items={{
                 manual: "Manual QA",
                 automation: "Automation",
@@ -175,7 +214,7 @@ export function NewBugForm({
             <Label htmlFor="severity">Severity *</Label>
             <Select
               value={severity}
-              onValueChange={(v) => setSeverity((v as string) ?? "")}
+              onValueChange={(v) => setSeverity((v as Bug["severity"]) ?? "")}
               items={{ critical: "Critical", high: "High", medium: "Medium", low: "Low" }}
             >
               <SelectTrigger id="severity" className="w-full">
@@ -194,7 +233,7 @@ export function NewBugForm({
             <Label htmlFor="priority">Priority</Label>
             <Select
               value={priority}
-              onValueChange={(v) => setPriority((v as string) ?? "p2")}
+              onValueChange={(v) => setPriority((v as Bug["priority"]) ?? "p2")}
               items={{ p1: "P1 - Critical", p2: "P2 - High", p3: "P3 - Medium", p4: "P4 - Low" }}
             >
               <SelectTrigger id="priority" className="w-full">
@@ -266,6 +305,7 @@ export function NewBugForm({
             name="steps"
             placeholder={"1. Go to...\n2. Click on...\n3. Observe..."}
             className="min-h-24"
+            defaultValue={defaultValues?.steps}
             required
           />
         </div>
@@ -273,11 +313,21 @@ export function NewBugForm({
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div className="space-y-1.5">
             <Label htmlFor="expected">Expected Result</Label>
-            <Textarea id="expected" name="expected" placeholder="What should happen?" />
+            <Textarea
+              id="expected"
+              name="expected"
+              placeholder="What should happen?"
+              defaultValue={defaultValues?.expected}
+            />
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="actual">Actual Result</Label>
-            <Textarea id="actual" name="actual" placeholder="What actually happened?" />
+            <Textarea
+              id="actual"
+              name="actual"
+              placeholder="What actually happened?"
+              defaultValue={defaultValues?.actual}
+            />
           </div>
         </div>
 
@@ -287,6 +337,7 @@ export function NewBugForm({
             id="context"
             name="context"
             placeholder="Environment details, browser versions, related tickets..."
+            defaultValue={defaultValues?.context}
           />
         </div>
 
@@ -355,8 +406,8 @@ export function NewBugForm({
         ) : null}
 
         <div className="flex justify-end pt-2">
-          <Button type="submit" disabled={pending || !project || !severity}>
-            {pending ? "Creating..." : "Create Bug"}
+          <Button type="submit" disabled={pending || (!isEdit && !project) || !severity}>
+            {pending ? "Saving..." : isEdit ? "Save Changes" : "Create Bug"}
           </Button>
         </div>
       </form>
