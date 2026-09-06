@@ -1,8 +1,10 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Bell, LogOut, Menu, Search } from "lucide-react";
 
+import { createClient } from "@/lib/supabase/client";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import {
@@ -14,6 +16,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
+import type { Profile } from "@/services/profile";
 
 const notifications = [
   { title: "Bug assigned to you", detail: "IC-4921 — Payment gateway timeout", time: "2h ago" },
@@ -21,7 +24,16 @@ const notifications = [
   { title: "New comment", detail: "A. Lee commented on IC-4905", time: "Yesterday" },
 ];
 
-export function AppTopbar({ onMenuClick }: { onMenuClick: () => void }) {
+export function AppTopbar({ onMenuClick, profile }: { onMenuClick: () => void; profile: Profile }) {
+  const router = useRouter();
+
+  async function handleLogout() {
+    const supabase = createClient();
+    await supabase.auth.signOut();
+    router.push("/login");
+    router.refresh();
+  }
+
   return (
     <header className="border-border bg-background flex h-16 shrink-0 items-center gap-4 border-b px-4 sm:px-6">
       <Button
@@ -66,15 +78,17 @@ export function AppTopbar({ onMenuClick }: { onMenuClick: () => void }) {
             render={
               <button type="button" aria-label="Account menu">
                 <Avatar className="size-8">
-                  <AvatarFallback>J</AvatarFallback>
+                  <AvatarFallback>{profile.full_name[0]}</AvatarFallback>
                 </Avatar>
               </button>
             }
           />
           <DropdownMenuContent align="end">
-            <DropdownMenuItem render={<Link href="/profile" />}>Jane Smith</DropdownMenuItem>
+            <DropdownMenuItem render={<Link href="/profile" />}>
+              {profile.full_name}
+            </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem variant="destructive">
+            <DropdownMenuItem variant="destructive" onClick={handleLogout}>
               <LogOut /> Logout
             </DropdownMenuItem>
           </DropdownMenuContent>

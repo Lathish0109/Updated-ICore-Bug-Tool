@@ -1,3 +1,6 @@
+"use client";
+
+import { useActionState } from "react";
 import { ArrowRight, Bug, Lock, Mail } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -5,7 +8,11 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
+import { login } from "./actions";
+
 export default function LoginPage() {
+  const [state, formAction, pending] = useActionState(login, undefined);
+
   return (
     <div className="bg-background flex min-h-screen items-center justify-center p-6">
       <div className="border-border bg-card w-full max-w-md rounded-xl border p-8 shadow-sm">
@@ -20,7 +27,7 @@ export default function LoginPage() {
 
         <div className="border-border my-6 border-t" />
 
-        <form className="space-y-4">
+        <form action={formAction} className="space-y-4">
           <div className="space-y-1.5">
             <Label htmlFor="email">Work Email</Label>
             <div className="relative">
@@ -52,6 +59,12 @@ export default function LoginPage() {
             </div>
           </div>
 
+          {state?.error ? (
+            <p className="bg-destructive/10 text-destructive rounded-md px-3 py-2 text-sm">
+              {state.error}
+            </p>
+          ) : null}
+
           <div className="flex items-center gap-2">
             <Checkbox id="remember" name="remember" />
             <Label htmlFor="remember" className="text-muted-foreground font-normal">
@@ -59,8 +72,8 @@ export default function LoginPage() {
             </Label>
           </div>
 
-          <Button type="submit" className="h-10 w-full text-sm">
-            Login <ArrowRight />
+          <Button type="submit" disabled={pending} className="h-10 w-full text-sm">
+            {pending ? "Signing in..." : "Login"} <ArrowRight />
           </Button>
         </form>
 

@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import {
   BarChart3,
   Bug,
@@ -16,20 +16,48 @@ import {
 } from "lucide-react";
 
 import { cn } from "@/lib/utils";
+import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
+import type { Profile } from "@/services/profile";
 
-const navItems = [
+const navItems: {
+  href: string;
+  label: string;
+  icon: typeof LayoutDashboard;
+  roles?: Profile["role"][];
+}[] = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/projects", label: "Projects", icon: FolderKanban },
   { href: "/bugs", label: "Bugs", icon: Bug },
   { href: "/reports", label: "Reports", icon: BarChart3 },
-  { href: "/users", label: "Users", icon: Users },
-  { href: "/settings", label: "Settings", icon: Settings },
+  { href: "/users", label: "Users", icon: Users, roles: ["admin"] },
+  { href: "/settings", label: "Settings", icon: Settings, roles: ["admin"] },
   { href: "/profile", label: "Profile", icon: UserRound },
 ];
 
-export function AppSidebar({ mobileOpen, onClose }: { mobileOpen: boolean; onClose: () => void }) {
+export function AppSidebar({
+  mobileOpen,
+  onClose,
+  profile,
+}: {
+  mobileOpen: boolean;
+  onClose: () => void;
+  profile: Profile;
+}) {
   const pathname = usePathname();
+  const router = useRouter();
+
+  async function handleLogout() {
+    const supabase = createClient();
+    await supabase.auth.signOut();
+    router.push("/login");
+    router.refresh();
+  }
+
+  const visibleNavItems = navItems.filter(
+    (item) => !item.roles || item.roles.includes(profile.role),
+  );
+  const canCreateBugs = profile.role !== "viewer";
 
   return (
     <>
@@ -63,17 +91,19 @@ export function AppSidebar({ mobileOpen, onClose }: { mobileOpen: boolean; onClo
           </Button>
         </div>
 
-        <div className="px-4">
-          <Button
-            render={<Link href="/bugs/new" onClick={onClose} />}
-            className="w-full justify-center"
-          >
-            <Plus /> New Bug
-          </Button>
-        </div>
+        {canCreateBugs ? (
+          <div className="px-4">
+            <Button
+              render={<Link href="/bugs/new" onClick={onClose} />}
+              className="w-full justify-center"
+            >
+              <Plus /> New Bug
+            </Button>
+          </div>
+        ) : null}
 
         <nav aria-label="Primary" className="flex-1 space-y-1 px-3 pt-6">
-          {navItems.map(({ href, label, icon: Icon }) => {
+          {visibleNavItems.map(({ href, label, icon: Icon }) => {
             const active = pathname === href || pathname.startsWith(`${href}/`);
             return (
               <Link
@@ -98,6 +128,7 @@ export function AppSidebar({ mobileOpen, onClose }: { mobileOpen: boolean; onClo
         <div className="border-border space-y-1 border-t px-3 py-4">
           <button
             type="button"
+            onClick={handleLogout}
             className="text-muted-foreground hover:bg-muted hover:text-foreground flex w-full items-center gap-2.5 rounded-md px-3 py-2 text-sm font-medium transition-colors"
           >
             <LogOut className="size-4" />

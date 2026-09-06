@@ -1,7 +1,8 @@
-import { Button } from "@/components/ui/button";
+import { redirect } from "next/navigation";
+
 import { Checkbox } from "@/components/ui/checkbox";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { getCurrentProfile } from "@/services/profile";
 
 const notificationPrefs = [
   { id: "assigned", label: "Bug assigned to me" },
@@ -11,7 +12,12 @@ const notificationPrefs = [
   { id: "reopened", label: "Bug reopened" },
 ];
 
-export default function SettingsPage() {
+export default async function SettingsPage() {
+  const profile = await getCurrentProfile();
+  if (profile?.role !== "admin") {
+    redirect("/dashboard");
+  }
+
   return (
     <div className="max-w-xl space-y-6">
       <div>
@@ -20,26 +26,6 @@ export default function SettingsPage() {
           Manage your account and workspace preferences.
         </p>
       </div>
-
-      <section className="border-border bg-card space-y-4 rounded-lg border p-6">
-        <h2 className="text-sm font-semibold">Profile</h2>
-        <div className="space-y-1.5">
-          <Label htmlFor="settings-name">Full Name</Label>
-          <Input id="settings-name" name="name" defaultValue="Jane Smith" />
-        </div>
-        <div className="space-y-1.5">
-          <Label htmlFor="settings-email">Work Email</Label>
-          <Input
-            id="settings-email"
-            name="email"
-            type="email"
-            defaultValue="jane.smith@icore.app"
-          />
-        </div>
-        <div className="flex justify-end">
-          <Button size="sm">Save Changes</Button>
-        </div>
-      </section>
 
       <section className="border-border bg-card space-y-3 rounded-lg border p-6">
         <h2 className="text-sm font-semibold">Notification Preferences</h2>
