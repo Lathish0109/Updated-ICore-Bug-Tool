@@ -109,6 +109,12 @@ export async function getProject(id: string): Promise<ProjectWithStats | null> {
   };
 }
 
+export async function getAllProjectsBasic() {
+  const supabase = await createClient();
+  const { data } = await supabase.from("projects").select("id, name").order("name");
+  return data ?? [];
+}
+
 export async function createProject(
   input: Pick<TablesInsert<"projects">, "name" | "key" | "description">,
 ) {

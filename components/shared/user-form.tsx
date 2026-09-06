@@ -1,10 +1,9 @@
 "use client";
 
-import type { FormEvent } from "react";
+import { useActionState } from "react";
 
-import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { UserRound } from "lucide-react";
-import { toast } from "sonner";
 
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -20,43 +19,42 @@ import {
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 
-const projects = [
-  { id: "icma", name: "ICore Mobile App" },
-  { id: "pgap", name: "Payment Gateway API" },
-  { id: "lcrm", name: "Legacy CRM Migration" },
-];
+const ROLE_LABELS = {
+  admin: "Admin",
+  manager: "Manager",
+  developer: "Developer",
+  tester: "Tester",
+  viewer: "Viewer",
+} as const;
 
 type UserFormValues = {
   name?: string;
   email?: string;
-  role?: string;
+  role?: keyof typeof ROLE_LABELS;
   status?: "active" | "inactive";
   projects?: string[] | "all";
 };
 
+type FormState = { error?: string } | undefined;
+
 export function UserForm({
   mode,
   defaultValues,
+  projects,
+  action,
 }: {
   mode: "create" | "edit";
   defaultValues?: UserFormValues;
+  projects: { id: string; name: string }[];
+  action: (prevState: FormState, formData: FormData) => Promise<FormState>;
 }) {
-  const router = useRouter();
+  const [state, formAction, pending] = useActionState(action, undefined);
+
   const allProjects = defaultValues?.projects === "all" || defaultValues === undefined;
   const selectedProjects = Array.isArray(defaultValues?.projects) ? defaultValues.projects : [];
 
-  function handleSubmit(e: FormEvent<HTMLFormElement>) {
-    e.preventDefault();
-    toast.success(
-      mode === "create"
-        ? `${(new FormData(e.currentTarget).get("name") as string) || "User"} created`
-        : "User updated",
-    );
-    router.push("/users");
-  }
-
   return (
-    <form onSubmit={handleSubmit} className="border-border bg-card space-y-6 rounded-lg border p-6">
+    <form action={formAction} className="border-border bg-card space-y-6 rounded-lg border p-6">
       <div className="space-y-1.5">
         <Label>Profile Photo</Label>
         <div className="flex items-center gap-4">
@@ -70,7 +68,9 @@ export function UserForm({
               Upload Photo
             </Button>
             <input id="photo" name="photo" type="file" accept="image/*" className="hidden" />
-            <p className="text-muted-foreground mt-1 text-xs">JPG or PNG, max 2MB.</p>
+            <p className="text-muted-foreground mt-1 text-xs">
+              Photo upload lands once this user has signed in and can manage their own profile.
+            </p>
           </div>
         </div>
       </div>
@@ -95,6 +95,7 @@ export function UserForm({
             placeholder="jane.smith@icore.app"
             defaultValue={defaultValues?.email}
             required
+            disabled={mode === "edit"}
           />
         </div>
       </div>
@@ -108,22 +109,21 @@ export function UserForm({
             type="password"
             placeholder={mode === "edit" ? "Leave blank to keep current password" : undefined}
             required={mode === "create"}
+            minLength={6}
           />
         </div>
         <div className="space-y-1.5">
           <Label htmlFor="role">Role *</Label>
-          <Select
-            name="role"
-            defaultValue={defaultValues?.role ?? "developer"}
-            items={{ admin: "Admin", developer: "Developer", qa: "QA" }}
-          >
+          <Select name="role" defaultValue={defaultValues?.role ?? "developer"} items={ROLE_LABELS}>
             <SelectTrigger id="role" className="w-full">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="admin">Admin</SelectItem>
-              <SelectItem value="developer">Developer</SelectItem>
-              <SelectItem value="qa">QA</SelectItem>
+              {Object.entries(ROLE_LABELS).map(([value, label]) => (
+                <SelectItem key={value} value={value}>
+                  {label}
+                </SelectItem>
+              ))}
             </SelectContent>
           </Select>
         </div>
@@ -138,24 +138,28 @@ export function UserForm({
               All Projects
             </Label>
           </div>
-          <div className="border-border ml-1 space-y-2 border-l pl-4">
-            {projects.map((project) => (
-              <div key={project.id} className="flex items-center gap-2">
-                <Checkbox
-                  id={`project-${project.id}`}
-                  name="projects"
-                  value={project.id}
-                  defaultChecked={selectedProjects.includes(project.id)}
-                />
-                <Label
-                  htmlFor={`project-${project.id}`}
-                  className="text-muted-foreground font-normal"
-                >
-                  {project.name}
-                </Label>
-              </div>
-            ))}
-          </div>
+          {projects.length > 0 ? (
+            <div className="border-border ml-1 space-y-2 border-l pl-4">
+              {projects.map((project) => (
+                <div key={project.id} className="flex items-center gap-2">
+                  <Checkbox
+                    id={`project-${project.id}`}
+                    name="projects"
+                    value={project.id}
+                    defaultChecked={selectedProjects.includes(project.id)}
+                  />
+                  <Label
+                    htmlFor={`project-${project.id}`}
+                    className="text-muted-foreground font-normal"
+                  >
+                    {project.name}
+                  </Label>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-muted-foreground ml-1 pl-4 text-xs">No projects created yet.</p>
+          )}
         </div>
       </div>
 
@@ -173,11 +177,19 @@ export function UserForm({
         </span>
       </div>
 
+      {state?.error ? (
+        <p className="bg-destructive/10 text-destructive rounded-md px-3 py-2 text-sm">
+          {state.error}
+        </p>
+      ) : null}
+
       <div className="flex justify-end gap-2 pt-2">
-        <Button type="button" variant="outline" onClick={() => router.push("/users")}>
+        <Button type="button" variant="outline" render={<Link href="/users" />}>
           Cancel
         </Button>
-        <Button type="submit">{mode === "create" ? "Create User" : "Save Changes"}</Button>
+        <Button type="submit" disabled={pending}>
+          {pending ? "Saving..." : mode === "create" ? "Create User" : "Save Changes"}
+        </Button>
       </div>
     </form>
   );
