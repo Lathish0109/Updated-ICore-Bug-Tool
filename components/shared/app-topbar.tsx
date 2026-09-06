@@ -1,4 +1,4 @@
-import { Bell, History, LogOut, Search, Settings, User } from "lucide-react";
+import { Bell, LogOut, Search } from "lucide-react";
 
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -48,29 +48,18 @@ export function AppTopbar() {
           </DropdownMenuContent>
         </DropdownMenu>
 
-        <Button variant="ghost" size="icon" aria-label="History">
-          <History />
-        </Button>
-
         <DropdownMenu>
           <DropdownMenuTrigger
             render={
               <button type="button" aria-label="Account menu">
                 <Avatar className="size-8">
-                  <AvatarFallback>U</AvatarFallback>
+                  <AvatarFallback>J</AvatarFallback>
                 </Avatar>
               </button>
             }
           />
           <DropdownMenuContent align="end">
-            <DropdownMenuLabel>My Account</DropdownMenuLabel>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem>
-              <User /> Profile
-            </DropdownMenuItem>
-            <DropdownMenuItem>
-              <Settings /> Settings
-            </DropdownMenuItem>
+            <DropdownMenuLabel>Jane Smith</DropdownMenuLabel>
             <DropdownMenuSeparator />
             <DropdownMenuItem variant="destructive">
               <LogOut /> Sign Out

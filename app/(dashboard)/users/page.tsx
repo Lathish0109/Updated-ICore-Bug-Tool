@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { Download, Search, UserPlus } from "lucide-react";
 
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -25,6 +26,7 @@ const statusStyles: Record<string, string> = {
 
 const users = [
   {
+    id: "jane-smith",
     name: "Jane Smith",
     email: "jane.smith@icore.app",
     role: "Admin",
@@ -33,6 +35,7 @@ const users = [
     status: "Active",
   },
   {
+    id: "alex-kim",
     name: "Alex Kim",
     email: "alex.k@icore.app",
     role: "Developer",
@@ -41,6 +44,7 @@ const users = [
     status: "Active",
   },
   {
+    id: "maria-rodriguez",
     name: "Maria Rodriguez",
     email: "maria.r@icore.app",
     role: "QA",
@@ -64,7 +68,7 @@ export default function UsersPage() {
           <Button variant="outline">
             <Download /> Export
           </Button>
-          <Button>
+          <Button render={<Link href="/users/new" />}>
             <UserPlus /> Add User
           </Button>
         </div>
@@ -118,7 +122,7 @@ export default function UsersPage() {
           </thead>
           <tbody>
             {users.map((user) => (
-              <tr key={user.email} className="border-border border-b last:border-0">
+              <tr key={user.id} className="border-border border-b last:border-0">
                 <td className="px-5 py-3">
                   <div className="flex items-center gap-2.5">
                     <Avatar className="size-8">
@@ -155,7 +159,11 @@ export default function UsersPage() {
                   </Badge>
                 </td>
                 <td className="px-5 py-3">
-                  <Button variant="ghost" size="sm">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    render={<Link href={`/users/${user.id}/edit`} />}
+                  >
                     Edit
                   </Button>
                 </td>

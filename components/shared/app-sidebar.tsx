@@ -6,7 +6,6 @@ import {
   BarChart3,
   Bug,
   FolderKanban,
-  HelpCircle,
   LayoutDashboard,
   LogOut,
   Plus,
@@ -64,13 +63,6 @@ export function AppSidebar() {
       </nav>
 
       <div className="border-border space-y-1 border-t px-3 py-4">
-        <Link
-          href="/help"
-          className="text-muted-foreground hover:bg-muted hover:text-foreground flex items-center gap-2.5 rounded-md px-3 py-2 text-sm font-medium transition-colors"
-        >
-          <HelpCircle className="size-4" />
-          Help
-        </Link>
         <button
           type="button"
           className="text-muted-foreground hover:bg-muted hover:text-foreground flex w-full items-center gap-2.5 rounded-md px-3 py-2 text-sm font-medium transition-colors"
