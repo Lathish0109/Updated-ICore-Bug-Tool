@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { Bell, LogOut, Search } from "lucide-react";
 
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -59,10 +60,10 @@ export function AppTopbar() {
             }
           />
           <DropdownMenuContent align="end">
-            <DropdownMenuLabel>Jane Smith</DropdownMenuLabel>
+            <DropdownMenuItem render={<Link href="/profile" />}>Jane Smith</DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem variant="destructive">
-              <LogOut /> Sign Out
+              <LogOut /> Logout
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

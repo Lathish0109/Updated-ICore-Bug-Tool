@@ -10,6 +10,7 @@ import {
   LogOut,
   Plus,
   Settings,
+  UserRound,
   Users,
 } from "lucide-react";
 
@@ -23,6 +24,7 @@ const navItems = [
   { href: "/reports", label: "Reports", icon: BarChart3 },
   { href: "/users", label: "Users", icon: Users },
   { href: "/settings", label: "Settings", icon: Settings },
+  { href: "/profile", label: "Profile", icon: UserRound },
 ];
 
 export function AppSidebar() {
@@ -68,7 +70,7 @@ export function AppSidebar() {
           className="text-muted-foreground hover:bg-muted hover:text-foreground flex w-full items-center gap-2.5 rounded-md px-3 py-2 text-sm font-medium transition-colors"
         >
           <LogOut className="size-4" />
-          Sign Out
+          Logout
         </button>
       </div>
     </aside>

@@ -160,12 +160,12 @@ export default function NewBugPage() {
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div className="space-y-1.5">
-            <Label htmlFor="expected">Expected Result *</Label>
-            <Textarea id="expected" name="expected" placeholder="What should happen?" required />
+            <Label htmlFor="expected">Expected Result</Label>
+            <Textarea id="expected" name="expected" placeholder="What should happen?" />
           </div>
           <div className="space-y-1.5">
-            <Label htmlFor="actual">Actual Result *</Label>
-            <Textarea id="actual" name="actual" placeholder="What actually happened?" required />
+            <Label htmlFor="actual">Actual Result</Label>
+            <Textarea id="actual" name="actual" placeholder="What actually happened?" />
           </div>
         </div>
 
