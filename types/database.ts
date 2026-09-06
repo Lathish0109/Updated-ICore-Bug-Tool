@@ -236,6 +236,61 @@ export type Database = {
           },
         ];
       };
+      notifications: {
+        Row: {
+          actor_id: string | null;
+          bug_id: string | null;
+          created_at: string;
+          id: string;
+          is_read: boolean;
+          message: string;
+          recipient_id: string;
+          type: Database["public"]["Enums"]["notification_type"];
+        };
+        Insert: {
+          actor_id?: string | null;
+          bug_id?: string | null;
+          created_at?: string;
+          id?: string;
+          is_read?: boolean;
+          message: string;
+          recipient_id: string;
+          type: Database["public"]["Enums"]["notification_type"];
+        };
+        Update: {
+          actor_id?: string | null;
+          bug_id?: string | null;
+          created_at?: string;
+          id?: string;
+          is_read?: boolean;
+          message?: string;
+          recipient_id?: string;
+          type?: Database["public"]["Enums"]["notification_type"];
+        };
+        Relationships: [
+          {
+            foreignKeyName: "notifications_actor_id_fkey";
+            columns: ["actor_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "notifications_bug_id_fkey";
+            columns: ["bug_id"];
+            isOneToOne: false;
+            referencedRelation: "bugs";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "notifications_recipient_id_fkey";
+            columns: ["recipient_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       profiles: {
         Row: {
           avatar_url: string | null;
@@ -243,6 +298,7 @@ export type Database = {
           email: string;
           full_name: string;
           id: string;
+          notification_preferences: Json;
           role: Database["public"]["Enums"]["user_role"];
           status: Database["public"]["Enums"]["user_status"];
           updated_at: string;
@@ -253,6 +309,7 @@ export type Database = {
           email: string;
           full_name: string;
           id: string;
+          notification_preferences?: Json;
           role?: Database["public"]["Enums"]["user_role"];
           status?: Database["public"]["Enums"]["user_status"];
           updated_at?: string;
@@ -263,6 +320,7 @@ export type Database = {
           email?: string;
           full_name?: string;
           id?: string;
+          notification_preferences?: Json;
           role?: Database["public"]["Enums"]["user_role"];
           status?: Database["public"]["Enums"]["user_status"];
           updated_at?: string;
@@ -370,6 +428,8 @@ export type Database = {
       bug_severity: "critical" | "high" | "medium" | "low";
       bug_source: "manual" | "automation" | "user_reported";
       bug_status: "open" | "in_progress" | "resolved" | "closed";
+      notification_type:
+        "bug_assigned" | "status_changed" | "comment_added" | "mentioned" | "bug_reopened";
       project_status: "active" | "archived";
       user_role: "admin" | "manager" | "developer" | "tester" | "viewer";
       user_status: "active" | "inactive";
@@ -508,6 +568,13 @@ export const Constants = {
       bug_severity: ["critical", "high", "medium", "low"],
       bug_source: ["manual", "automation", "user_reported"],
       bug_status: ["open", "in_progress", "resolved", "closed"],
+      notification_type: [
+        "bug_assigned",
+        "status_changed",
+        "comment_added",
+        "mentioned",
+        "bug_reopened",
+      ],
       project_status: ["active", "archived"],
       user_role: ["admin", "manager", "developer", "tester", "viewer"],
       user_status: ["active", "inactive"],

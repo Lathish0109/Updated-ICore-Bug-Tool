@@ -1,22 +1,17 @@
 import { redirect } from "next/navigation";
 
-import { Checkbox } from "@/components/ui/checkbox";
-import { Label } from "@/components/ui/label";
+import { NotificationPreferencesForm } from "@/components/shared/notification-preferences-form";
 import { getCurrentProfile } from "@/services/profile";
-
-const notificationPrefs = [
-  { id: "assigned", label: "Bug assigned to me" },
-  { id: "status", label: "Bug status changed" },
-  { id: "comment", label: "Comment added" },
-  { id: "mention", label: "Mentioned in a comment" },
-  { id: "reopened", label: "Bug reopened" },
-];
+import type { NotificationType } from "@/services/notifications";
 
 export default async function SettingsPage() {
   const profile = await getCurrentProfile();
-  if (profile?.role !== "admin") {
-    redirect("/dashboard");
+  if (!profile) {
+    redirect("/login");
   }
+
+  const initialPrefs =
+    (profile.notification_preferences as Partial<Record<NotificationType, boolean>> | null) ?? {};
 
   return (
     <div className="max-w-xl space-y-6">
@@ -29,16 +24,7 @@ export default async function SettingsPage() {
 
       <section className="border-border bg-card space-y-3 rounded-lg border p-6">
         <h2 className="text-sm font-semibold">Notification Preferences</h2>
-        <div className="space-y-2.5">
-          {notificationPrefs.map(({ id, label }) => (
-            <div key={id} className="flex items-center gap-2">
-              <Checkbox id={id} defaultChecked />
-              <Label htmlFor={id} className="text-muted-foreground font-normal">
-                {label}
-              </Label>
-            </div>
-          ))}
-        </div>
+        <NotificationPreferencesForm initialPrefs={initialPrefs} />
       </section>
     </div>
   );

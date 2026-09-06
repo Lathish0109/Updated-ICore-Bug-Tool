@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import type { TablesInsert } from "@/types/database";
 import { STATUS_LABELS, type Bug, type BugLabel, type BugWithRelations } from "@/lib/bug-constants";
+import { notify } from "@/services/notifications";
 
 export type { Bug, BugLabel, BugWithRelations };
 export {
@@ -153,6 +154,16 @@ export async function createBug(input: CreateBugInput) {
     .from("bug_activity")
     .insert({ bug_id: bug.id, actor_id: user.id, action: "created this bug" });
 
+  if (bugFields.assignee_id) {
+    await notify({
+      recipientId: bugFields.assignee_id,
+      actorId: user.id,
+      type: "bug_assigned",
+      message: `You were assigned to "${bugFields.title}".`,
+      bugId: bug.id as string,
+    });
+  }
+
   return { error: null, bugId: bug.id as string };
 }
 
@@ -166,7 +177,55 @@ export async function addComment(bugId: string, body: string) {
   const { error } = await supabase
     .from("bug_comments")
     .insert({ bug_id: bugId, author_id: user.id, body });
-  return { error: error ? "Couldn't add comment." : null };
+  if (error) return { error: "Couldn't add comment." };
+
+  const { data: bug } = await supabase
+    .from("bugs")
+    .select("title, assignee_id, reporter_id, project_id")
+    .eq("id", bugId)
+    .single();
+
+  if (bug) {
+    const recipients = new Set(
+      [bug.assignee_id, bug.reporter_id].filter((id): id is string => !!id),
+    );
+    for (const recipientId of recipients) {
+      await notify({
+        recipientId,
+        actorId: user.id,
+        type: "comment_added",
+        message: `New comment on "${bug.title}".`,
+        bugId,
+      });
+    }
+
+    const mentionMatches = body.match(/@([\w.-]+(?:\s[\w.-]+)?)/g);
+    if (mentionMatches && mentionMatches.length > 0) {
+      const { data: members } = await supabase
+        .from("project_members")
+        .select("profile:profiles(id, full_name)")
+        .eq("project_id", bug.project_id);
+
+      for (const member of members ?? []) {
+        const profile = member.profile as { id: string; full_name: string } | null;
+        if (!profile || recipients.has(profile.id)) continue;
+        const isMentioned = mentionMatches.some(
+          (m) => m.slice(1).trim().toLowerCase() === profile.full_name.toLowerCase(),
+        );
+        if (isMentioned) {
+          await notify({
+            recipientId: profile.id,
+            actorId: user.id,
+            type: "mentioned",
+            message: `You were mentioned in a comment on "${bug.title}".`,
+            bugId,
+          });
+        }
+      }
+    }
+  }
+
+  return { error: null };
 }
 
 export async function updateBugStatus(bugId: string, status: Bug["status"]) {
@@ -176,7 +235,11 @@ export async function updateBugStatus(bugId: string, status: Bug["status"]) {
   } = await supabase.auth.getUser();
   if (!user) return { error: "Not signed in." };
 
-  const { data: current } = await supabase.from("bugs").select("status").eq("id", bugId).single();
+  const { data: current } = await supabase
+    .from("bugs")
+    .select("status, title, assignee_id, reporter_id")
+    .eq("id", bugId)
+    .single();
 
   const { error } = await supabase.from("bugs").update({ status }).eq("id", bugId);
   if (error) return { error: "Couldn't update status." };
@@ -188,6 +251,24 @@ export async function updateBugStatus(bugId: string, status: Bug["status"]) {
       action: "changed status",
       detail: `${STATUS_LABELS[current.status]} → ${STATUS_LABELS[status]}`,
     });
+
+    const wasClosed = current.status === "resolved" || current.status === "closed";
+    const isReopened = wasClosed && (status === "open" || status === "in_progress");
+
+    const recipients = new Set(
+      [current.assignee_id, current.reporter_id].filter((id): id is string => !!id),
+    );
+    for (const recipientId of recipients) {
+      await notify({
+        recipientId,
+        actorId: user.id,
+        type: isReopened ? "bug_reopened" : "status_changed",
+        message: isReopened
+          ? `"${current.title}" was reopened.`
+          : `"${current.title}" status changed to ${STATUS_LABELS[status]}.`,
+        bugId,
+      });
+    }
   }
 
   return { error: null };

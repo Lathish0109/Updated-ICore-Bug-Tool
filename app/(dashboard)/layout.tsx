@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 
 import { DashboardShell } from "@/components/shared/dashboard-shell";
 import { getCurrentProfile } from "@/services/profile";
+import { getNotifications } from "@/services/notifications";
 
 export default async function DashboardLayout({ children }: { children: ReactNode }) {
   const profile = await getCurrentProfile();
@@ -15,5 +16,11 @@ export default async function DashboardLayout({ children }: { children: ReactNod
     redirect("/login");
   }
 
-  return <DashboardShell profile={profile}>{children}</DashboardShell>;
+  const { notifications, unreadCount } = await getNotifications();
+
+  return (
+    <DashboardShell profile={profile} notifications={notifications} unreadCount={unreadCount}>
+      {children}
+    </DashboardShell>
+  );
 }

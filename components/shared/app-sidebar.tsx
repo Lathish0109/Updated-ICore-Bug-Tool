@@ -31,7 +31,7 @@ const navItems: {
   { href: "/bugs", label: "Bugs", icon: Bug },
   { href: "/reports", label: "Reports", icon: BarChart3 },
   { href: "/users", label: "Users", icon: Users, roles: ["admin"] },
-  { href: "/settings", label: "Settings", icon: Settings, roles: ["admin"] },
+  { href: "/settings", label: "Settings", icon: Settings },
   { href: "/profile", label: "Profile", icon: UserRound },
 ];
 
