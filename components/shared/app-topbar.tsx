@@ -1,8 +1,22 @@
-import { Bell, History, Search } from "lucide-react";
+import { Bell, History, LogOut, Search, Settings, User } from "lucide-react";
 
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
+
+const notifications = [
+  { title: "Bug assigned to you", detail: "IC-4921 — Payment gateway timeout", time: "2h ago" },
+  { title: "Status changed", detail: "IC-4918 moved to In Progress", time: "4h ago" },
+  { title: "New comment", detail: "A. Lee commented on IC-4905", time: "Yesterday" },
+];
 
 export function AppTopbar() {
   return (
@@ -13,15 +27,56 @@ export function AppTopbar() {
       </div>
 
       <div className="ml-auto flex items-center gap-2">
-        <Button variant="ghost" size="icon" aria-label="Notifications">
-          <Bell />
-        </Button>
+        <DropdownMenu>
+          <DropdownMenuTrigger
+            render={
+              <Button variant="ghost" size="icon" aria-label="Notifications">
+                <Bell />
+              </Button>
+            }
+          />
+          <DropdownMenuContent align="end" className="w-80">
+            <DropdownMenuLabel>Notifications</DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            {notifications.map((n) => (
+              <DropdownMenuItem key={n.title} className="flex-col items-start gap-0.5 py-2">
+                <span className="text-sm font-medium">{n.title}</span>
+                <span className="text-muted-foreground text-xs">{n.detail}</span>
+                <span className="text-muted-foreground text-[0.7rem]">{n.time}</span>
+              </DropdownMenuItem>
+            ))}
+          </DropdownMenuContent>
+        </DropdownMenu>
+
         <Button variant="ghost" size="icon" aria-label="History">
           <History />
         </Button>
-        <Avatar className="size-8">
-          <AvatarFallback>U</AvatarFallback>
-        </Avatar>
+
+        <DropdownMenu>
+          <DropdownMenuTrigger
+            render={
+              <button type="button" aria-label="Account menu">
+                <Avatar className="size-8">
+                  <AvatarFallback>U</AvatarFallback>
+                </Avatar>
+              </button>
+            }
+          />
+          <DropdownMenuContent align="end">
+            <DropdownMenuLabel>My Account</DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem>
+              <User /> Profile
+            </DropdownMenuItem>
+            <DropdownMenuItem>
+              <Settings /> Settings
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem variant="destructive">
+              <LogOut /> Sign Out
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
     </header>
   );

@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 
+import Link from "next/link";
 import { Bug, FolderKanban, Users } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
@@ -176,9 +177,9 @@ export default function DashboardPage() {
           <p className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
             Recent Bugs
           </p>
-          <a href="/bugs" className="text-primary text-sm font-medium hover:underline">
+          <Link href="/bugs" className="text-primary text-sm font-medium hover:underline">
             View All
-          </a>
+          </Link>
         </div>
         <div className="mt-4 overflow-x-auto">
           <table className="w-full text-sm">
