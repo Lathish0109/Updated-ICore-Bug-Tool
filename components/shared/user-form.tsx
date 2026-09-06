@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 
 import Link from "next/link";
 import { UserRound } from "lucide-react";
@@ -49,6 +49,7 @@ export function UserForm({
   action: (prevState: FormState, formData: FormData) => Promise<FormState>;
 }) {
   const [state, formAction, pending] = useActionState(action, undefined);
+  const [role, setRole] = useState<string>(defaultValues?.role ?? "developer");
 
   const allProjects = defaultValues?.projects === "all" || defaultValues === undefined;
   const selectedProjects = Array.isArray(defaultValues?.projects) ? defaultValues.projects : [];
@@ -114,7 +115,11 @@ export function UserForm({
         </div>
         <div className="space-y-1.5">
           <Label htmlFor="role">Role *</Label>
-          <Select name="role" defaultValue={defaultValues?.role ?? "developer"} items={ROLE_LABELS}>
+          <Select
+            value={role}
+            onValueChange={(v) => setRole((v as string) ?? "developer")}
+            items={ROLE_LABELS}
+          >
             <SelectTrigger id="role" className="w-full">
               <SelectValue />
             </SelectTrigger>
@@ -126,6 +131,7 @@ export function UserForm({
               ))}
             </SelectContent>
           </Select>
+          <input type="hidden" name="role" value={role} />
         </div>
       </div>
 

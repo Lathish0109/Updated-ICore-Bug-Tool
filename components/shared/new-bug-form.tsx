@@ -46,6 +46,17 @@ export function NewBugForm({
   const [labels, setLabels] = useState<BugLabel[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Every Select field below is fully controlled with its own explicit
+  // hidden <input>, rather than relying on Base UI Select's built-in
+  // name-based form participation -- same reliable pattern already used
+  // for Labels. Guarantees FormData has the right value on submit
+  // regardless of Select internals.
+  const [project, setProject] = useState("");
+  const [source, setSource] = useState("manual");
+  const [severity, setSeverity] = useState("");
+  const [priority, setPriority] = useState("p2");
+  const [assignee, setAssignee] = useState("unassigned");
+
   function syncInputFiles(next: File[]) {
     const dt = new DataTransfer();
     next.forEach((f) => dt.items.add(f));
@@ -117,7 +128,11 @@ export function NewBugForm({
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div className="space-y-1.5">
             <Label htmlFor="project">Project *</Label>
-            <Select name="project" items={Object.fromEntries(projects.map((p) => [p.id, p.name]))}>
+            <Select
+              value={project}
+              onValueChange={(v) => setProject((v as string) ?? "")}
+              items={Object.fromEntries(projects.map((p) => [p.id, p.name]))}
+            >
               <SelectTrigger id="project" className="w-full">
                 <SelectValue placeholder="Select Project..." />
               </SelectTrigger>
@@ -129,12 +144,13 @@ export function NewBugForm({
                 ))}
               </SelectContent>
             </Select>
+            <input type="hidden" name="project" value={project} />
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="source">Bug Source</Label>
             <Select
-              name="source"
-              defaultValue="manual"
+              value={source}
+              onValueChange={(v) => setSource((v as string) ?? "manual")}
               items={{
                 manual: "Manual QA",
                 automation: "Automation",
@@ -150,6 +166,7 @@ export function NewBugForm({
                 <SelectItem value="user_reported">User Reported</SelectItem>
               </SelectContent>
             </Select>
+            <input type="hidden" name="source" value={source} />
           </div>
         </div>
 
@@ -157,7 +174,8 @@ export function NewBugForm({
           <div className="space-y-1.5">
             <Label htmlFor="severity">Severity *</Label>
             <Select
-              name="severity"
+              value={severity}
+              onValueChange={(v) => setSeverity((v as string) ?? "")}
               items={{ critical: "Critical", high: "High", medium: "Medium", low: "Low" }}
             >
               <SelectTrigger id="severity" className="w-full">
@@ -170,12 +188,13 @@ export function NewBugForm({
                 <SelectItem value="low">Low</SelectItem>
               </SelectContent>
             </Select>
+            <input type="hidden" name="severity" value={severity} />
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="priority">Priority</Label>
             <Select
-              name="priority"
-              defaultValue="p2"
+              value={priority}
+              onValueChange={(v) => setPriority((v as string) ?? "p2")}
               items={{ p1: "P1 - Critical", p2: "P2 - High", p3: "P3 - Medium", p4: "P4 - Low" }}
             >
               <SelectTrigger id="priority" className="w-full">
@@ -188,12 +207,13 @@ export function NewBugForm({
                 <SelectItem value="p4">P4 - Low</SelectItem>
               </SelectContent>
             </Select>
+            <input type="hidden" name="priority" value={priority} />
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="assignee">Assignee</Label>
             <Select
-              name="assignee"
-              defaultValue="unassigned"
+              value={assignee}
+              onValueChange={(v) => setAssignee((v as string) ?? "unassigned")}
               items={{
                 unassigned: "Unassigned",
                 ...Object.fromEntries(assignees.map((a) => [a.id, a.full_name])),
@@ -211,6 +231,7 @@ export function NewBugForm({
                 ))}
               </SelectContent>
             </Select>
+            <input type="hidden" name="assignee" value={assignee} />
           </div>
         </div>
 
@@ -334,7 +355,7 @@ export function NewBugForm({
         ) : null}
 
         <div className="flex justify-end pt-2">
-          <Button type="submit" disabled={pending}>
+          <Button type="submit" disabled={pending || !project || !severity}>
             {pending ? "Creating..." : "Create Bug"}
           </Button>
         </div>
