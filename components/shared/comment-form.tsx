@@ -1,19 +1,32 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
+import { useRouter } from "next/navigation";
+
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 
-export function CommentForm() {
-  const [value, setValue] = useState("");
+import { addCommentAction } from "@/app/(dashboard)/bugs/[id]/actions";
 
-  function handleSubmit(e: FormEvent<HTMLFormElement>) {
+export function CommentForm({ bugId }: { bugId: string }) {
+  const router = useRouter();
+  const [value, setValue] = useState("");
+  const [pending, setPending] = useState(false);
+
+  async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     if (!value.trim()) return;
-    toast.success("Comment added");
+    setPending(true);
+    const { error } = await addCommentAction(bugId, value.trim());
+    setPending(false);
+    if (error) {
+      toast.error(error);
+      return;
+    }
     setValue("");
+    router.refresh();
   }
 
   return (
@@ -25,8 +38,8 @@ export function CommentForm() {
         onChange={(e) => setValue(e.target.value)}
       />
       <div className="flex justify-end">
-        <Button type="submit" size="sm" disabled={!value.trim()}>
-          Comment
+        <Button type="submit" size="sm" disabled={!value.trim() || pending}>
+          {pending ? "Posting..." : "Comment"}
         </Button>
       </div>
     </form>

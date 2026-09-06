@@ -1,28 +1,215 @@
 import { createClient } from "@/lib/supabase/server";
-import type { Tables } from "@/types/database";
+import type { TablesInsert } from "@/types/database";
+import { STATUS_LABELS, type Bug, type BugLabel, type BugWithRelations } from "@/lib/bug-constants";
 
-export type Bug = Tables<"bugs">;
+export type { Bug, BugLabel, BugWithRelations };
+export {
+  STATUS_LABELS,
+  PRIORITY_LABELS,
+  SEVERITY_LABELS,
+  SOURCE_LABELS,
+  displayId,
+} from "@/lib/bug-constants";
 
-export const STATUS_LABELS: Record<Bug["status"], string> = {
-  open: "Open",
-  in_progress: "In Progress",
-  resolved: "Resolved",
-  closed: "Closed",
+type ProfileRef = { full_name: string } | null;
+
+const BUG_SELECT =
+  "*, project:projects(name, key), assignee:profiles!bugs_assignee_id_fkey(full_name), reporter:profiles!bugs_reporter_id_fkey(full_name), bug_labels(label)";
+
+type RawBugRow = Bug & {
+  project: { name: string; key: string } | null;
+  assignee: ProfileRef;
+  reporter: ProfileRef;
+  bug_labels: { label: string }[];
 };
 
-export function displayId(projectKey: string, sequenceNumber: number) {
-  return `${projectKey}-${sequenceNumber}`;
+function mapBugRow(row: RawBugRow): BugWithRelations {
+  const { project, assignee, reporter, bug_labels, ...bug } = row;
+  return {
+    ...bug,
+    projectName: project?.name ?? "Unknown project",
+    projectKey: project?.key ?? "???",
+    assigneeName: assignee?.full_name ?? null,
+    reporterName: reporter?.full_name ?? "Unknown",
+    labels: bug_labels.map((l) => l.label),
+  };
+}
+
+export async function getBugs(): Promise<BugWithRelations[]> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("bugs")
+    .select(BUG_SELECT)
+    .order("created_at", { ascending: false });
+  if (error || !data) return [];
+  return (data as unknown as RawBugRow[]).map(mapBugRow);
+}
+
+export async function getBug(id: string): Promise<BugWithRelations | null> {
+  const supabase = await createClient();
+  const { data, error } = await supabase.from("bugs").select(BUG_SELECT).eq("id", id).single();
+  if (error || !data) return null;
+  return mapBugRow(data as unknown as RawBugRow);
 }
 
 export async function getRecentBugsForProject(projectId: string, limit = 5) {
   const supabase = await createClient();
-
   const { data } = await supabase
     .from("bugs")
     .select("id, sequence_number, title, status")
     .eq("project_id", projectId)
     .order("created_at", { ascending: false })
     .limit(limit);
-
   return data ?? [];
+}
+
+export async function getBugComments(bugId: string) {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("bug_comments")
+    .select("*, author:profiles(full_name)")
+    .eq("bug_id", bugId)
+    .order("created_at", { ascending: true });
+  return (data ?? []).map((c) => ({
+    id: c.id,
+    body: c.body,
+    createdAt: c.created_at,
+    authorName: (c.author as ProfileRef)?.full_name ?? "Unknown",
+  }));
+}
+
+export async function getBugActivity(bugId: string) {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("bug_activity")
+    .select("*, actor:profiles(full_name)")
+    .eq("bug_id", bugId)
+    .order("created_at", { ascending: false });
+  return (data ?? []).map((a) => ({
+    id: a.id,
+    action: a.action,
+    detail: a.detail,
+    createdAt: a.created_at,
+    actorName: (a.actor as ProfileRef)?.full_name ?? "System",
+  }));
+}
+
+export async function getBugAttachments(bugId: string) {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("bug_attachments")
+    .select("*")
+    .eq("bug_id", bugId)
+    .order("created_at", { ascending: false });
+  if (!data) return [];
+
+  return data.map((a) => {
+    const {
+      data: { publicUrl },
+    } = supabase.storage.from("bug-attachments").getPublicUrl(a.file_path);
+    return { ...a, url: publicUrl };
+  });
+}
+
+type CreateBugInput = Pick<
+  TablesInsert<"bugs">,
+  | "project_id"
+  | "title"
+  | "steps_to_reproduce"
+  | "expected_result"
+  | "actual_result"
+  | "additional_context"
+  | "severity"
+  | "priority"
+  | "source"
+  | "assignee_id"
+> & { labels: BugLabel[] };
+
+export async function createBug(input: CreateBugInput) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "Not signed in.", bugId: null };
+
+  const { labels, ...bugFields } = input;
+
+  const { data: bug, error } = await supabase
+    .from("bugs")
+    // sequence_number has no DB-level default -- it's assigned by the
+    // bugs_set_sequence_number BEFORE INSERT trigger, which overwrites
+    // whatever is sent here. TypeScript still requires the field since
+    // there's no schema default it can see.
+    .insert({ ...bugFields, reporter_id: user.id, sequence_number: 0 })
+    .select("id")
+    .single();
+  if (error || !bug) return { error: "Couldn't create bug.", bugId: null };
+
+  if (labels.length > 0) {
+    await supabase.from("bug_labels").insert(labels.map((label) => ({ bug_id: bug.id, label })));
+  }
+
+  await supabase
+    .from("bug_activity")
+    .insert({ bug_id: bug.id, actor_id: user.id, action: "created this bug" });
+
+  return { error: null, bugId: bug.id as string };
+}
+
+export async function addComment(bugId: string, body: string) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "Not signed in." };
+
+  const { error } = await supabase
+    .from("bug_comments")
+    .insert({ bug_id: bugId, author_id: user.id, body });
+  return { error: error ? "Couldn't add comment." : null };
+}
+
+export async function updateBugStatus(bugId: string, status: Bug["status"]) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "Not signed in." };
+
+  const { data: current } = await supabase.from("bugs").select("status").eq("id", bugId).single();
+
+  const { error } = await supabase.from("bugs").update({ status }).eq("id", bugId);
+  if (error) return { error: "Couldn't update status." };
+
+  if (current && current.status !== status) {
+    await supabase.from("bug_activity").insert({
+      bug_id: bugId,
+      actor_id: user.id,
+      action: "changed status",
+      detail: `${STATUS_LABELS[current.status]} → ${STATUS_LABELS[status]}`,
+    });
+  }
+
+  return { error: null };
+}
+
+export async function addAttachment(bugId: string, file: File) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "Not signed in." };
+
+  const path = `${bugId}/${Date.now()}-${file.name}`;
+  const { error: uploadError } = await supabase.storage.from("bug-attachments").upload(path, file);
+  if (uploadError) return { error: "Couldn't upload file." };
+
+  const { error } = await supabase.from("bug_attachments").insert({
+    bug_id: bugId,
+    file_name: file.name,
+    file_path: path,
+    file_size: file.size,
+    uploaded_by: user.id,
+  });
+  return { error: error ? "Couldn't save attachment record." : null };
 }
