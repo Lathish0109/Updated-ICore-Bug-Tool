@@ -1,16 +1,9 @@
-import { ArrowRight, Lock, Mail } from "lucide-react";
+import { ArrowRight, Bug, Lock, Mail } from "lucide-react";
 
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-
-const roleBadges = [
-  { label: "SUPER ADMIN", className: "bg-[#E4E9FB] text-[#4F5FAD]" },
-  { label: "DEVELOPER", className: "bg-[#F3E8FD] text-[#8B5CF6]" },
-  { label: "TESTER", className: "bg-[#DCFCE7] text-[#16A34A]" },
-];
 
 export default function LoginPage() {
   return (
@@ -18,7 +11,7 @@ export default function LoginPage() {
       <div className="border-border bg-card w-full max-w-md rounded-xl border p-8 shadow-sm">
         <div className="text-center">
           <h1 className="text-foreground flex items-center justify-center gap-2 text-2xl font-bold">
-            <span aria-hidden>🐛</span> ICore Tracker
+            <Bug className="text-primary size-6" /> ICore Tracker
           </h1>
           <p className="text-muted-foreground mt-1.5 text-sm">
             Precision Engineering &amp; Bug Tracking
@@ -26,18 +19,6 @@ export default function LoginPage() {
         </div>
 
         <div className="border-border my-6 border-t" />
-
-        <div className="mb-6 flex flex-wrap justify-center gap-2">
-          {roleBadges.map(({ label, className }) => (
-            <Badge
-              key={label}
-              variant="outline"
-              className={`border-transparent px-2.5 py-1 font-mono text-[0.65rem] font-medium ${className}`}
-            >
-              {label}
-            </Badge>
-          ))}
-        </div>
 
         <form className="space-y-4">
           <div className="space-y-1.5">
@@ -74,7 +55,7 @@ export default function LoginPage() {
           <div className="flex items-center gap-2">
             <Checkbox id="remember" name="remember" />
             <Label htmlFor="remember" className="text-muted-foreground font-normal">
-              Remember me for 30 days
+              Remember me
             </Label>
           </div>
 
