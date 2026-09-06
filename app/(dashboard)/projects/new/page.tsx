@@ -1,9 +1,25 @@
+"use client";
+
+import type { FormEvent } from "react";
+
+import { useRouter } from "next/navigation";
+import { toast } from "sonner";
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 
 export default function NewProjectPage() {
+  const router = useRouter();
+
+  function handleSubmit(e: FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    const name = new FormData(e.currentTarget).get("name") as string;
+    toast.success(`${name || "Project"} created`);
+    router.push("/projects");
+  }
+
   return (
     <div className="max-w-xl space-y-6">
       <div>
@@ -13,7 +29,10 @@ export default function NewProjectPage() {
         <h1 className="text-2xl font-semibold tracking-tight">Create Project</h1>
       </div>
 
-      <form className="border-border bg-card space-y-4 rounded-lg border p-6">
+      <form
+        onSubmit={handleSubmit}
+        className="border-border bg-card space-y-4 rounded-lg border p-6"
+      >
         <div className="space-y-1.5">
           <Label htmlFor="name">Project Name *</Label>
           <Input id="name" name="name" placeholder="e.g., Customer Portal Redesign" required />
@@ -33,7 +52,7 @@ export default function NewProjectPage() {
         </div>
 
         <div className="flex justify-end gap-2 pt-2">
-          <Button type="button" variant="outline">
+          <Button type="button" variant="outline" onClick={() => router.push("/projects")}>
             Cancel
           </Button>
           <Button type="submit">Create Project</Button>

@@ -1,4 +1,9 @@
+"use client";
+
+import type { FormEvent } from "react";
+
 import { UserRound } from "lucide-react";
+import { toast } from "sonner";
 
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -6,6 +11,22 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
 export default function ProfilePage() {
+  function handleNameSubmit(e: FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    toast.success("Profile updated");
+  }
+
+  function handlePasswordSubmit(e: FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    const data = new FormData(e.currentTarget);
+    if (data.get("newPassword") !== data.get("confirmPassword")) {
+      toast.error("New password and confirmation don't match");
+      return;
+    }
+    toast.success("Password updated");
+    e.currentTarget.reset();
+  }
+
   return (
     <div className="max-w-xl space-y-6">
       <div>
@@ -31,13 +52,19 @@ export default function ProfilePage() {
               type="file"
               accept="image/*"
               className="hidden"
+              onChange={(e) => {
+                if (e.target.files?.length) toast.success("Photo updated");
+              }}
             />
             <p className="text-muted-foreground mt-1 text-xs">JPG or PNG, max 2MB.</p>
           </div>
         </div>
       </section>
 
-      <form className="border-border bg-card space-y-4 rounded-lg border p-6">
+      <form
+        onSubmit={handleNameSubmit}
+        className="border-border bg-card space-y-4 rounded-lg border p-6"
+      >
         <h2 className="text-sm font-semibold">Name</h2>
         <div className="space-y-1.5">
           <Label htmlFor="profile-name">Full Name</Label>
@@ -50,7 +77,10 @@ export default function ProfilePage() {
         </div>
       </form>
 
-      <form className="border-border bg-card space-y-4 rounded-lg border p-6">
+      <form
+        onSubmit={handlePasswordSubmit}
+        className="border-border bg-card space-y-4 rounded-lg border p-6"
+      >
         <h2 className="text-sm font-semibold">Reset Password</h2>
         <div className="space-y-1.5">
           <Label htmlFor="current-password">Current Password</Label>

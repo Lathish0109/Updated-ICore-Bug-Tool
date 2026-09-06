@@ -1,5 +1,7 @@
+"use client";
+
 import Link from "next/link";
-import { Bell, LogOut, Search } from "lucide-react";
+import { Bell, LogOut, Menu, Search } from "lucide-react";
 
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -19,9 +21,19 @@ const notifications = [
   { title: "New comment", detail: "A. Lee commented on IC-4905", time: "Yesterday" },
 ];
 
-export function AppTopbar() {
+export function AppTopbar({ onMenuClick }: { onMenuClick: () => void }) {
   return (
-    <header className="border-border bg-background flex h-16 shrink-0 items-center gap-4 border-b px-6">
+    <header className="border-border bg-background flex h-16 shrink-0 items-center gap-4 border-b px-4 sm:px-6">
+      <Button
+        variant="ghost"
+        size="icon"
+        className="md:hidden"
+        aria-label="Open menu"
+        onClick={onMenuClick}
+      >
+        <Menu />
+      </Button>
+
       <div className="relative max-w-md flex-1">
         <Search className="text-muted-foreground pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2" />
         <Input placeholder="Search bugs, projects, or users..." className="pl-9" />

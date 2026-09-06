@@ -1,7 +1,8 @@
+import { History } from "lucide-react";
+
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
+import { CommentForm } from "@/components/shared/comment-form";
 
 const statusStyles: Record<string, string> = {
   Open: "bg-red-50 text-red-600",
@@ -9,6 +10,8 @@ const statusStyles: Record<string, string> = {
   Resolved: "bg-blue-100 text-blue-700",
   Closed: "bg-emerald-100 text-emerald-700",
 };
+
+const labels = ["Payment", "Performance"];
 
 const comments = [
   {
@@ -23,6 +26,13 @@ const comments = [
   },
 ];
 
+const activity = [
+  { text: "J. Smith created this bug", time: "5h ago" },
+  { text: "Status changed from New to Open", time: "5h ago" },
+  { text: "Assigned to J. Smith", time: "4h ago" },
+  { text: "Priority changed from High to Critical", time: "3h ago" },
+];
+
 export default async function BugDetailPage({ params }: PageProps<"/bugs/[id]">) {
   const { id } = await params;
 
@@ -34,6 +44,17 @@ export default async function BugDetailPage({ params }: PageProps<"/bugs/[id]">)
           <h1 className="text-2xl font-semibold tracking-tight">
             Payment gateway timeout on checkout finalization
           </h1>
+          <div className="mt-2 flex flex-wrap gap-1.5">
+            {labels.map((label) => (
+              <Badge
+                key={label}
+                variant="outline"
+                className="bg-muted text-muted-foreground border-transparent"
+              >
+                {label}
+              </Badge>
+            ))}
+          </div>
         </div>
         <Badge variant="outline" className={`border-transparent ${statusStyles.Open}`}>
           Open
@@ -107,12 +128,23 @@ export default async function BugDetailPage({ params }: PageProps<"/bugs/[id]">)
           ))}
         </ul>
 
-        <div className="mt-4 space-y-2">
-          <Textarea placeholder="Add a comment..." className="min-h-20" />
-          <div className="flex justify-end">
-            <Button size="sm">Comment</Button>
-          </div>
-        </div>
+        <CommentForm />
+      </div>
+
+      <div className="border-border bg-card rounded-lg border p-5">
+        <p className="text-muted-foreground flex items-center gap-1.5 text-xs font-medium tracking-wide uppercase">
+          <History className="size-3.5" />
+          Activity
+        </p>
+        <ul className="border-border relative mt-4 space-y-4 border-l pl-4">
+          {activity.map((event, i) => (
+            <li key={i} className="relative">
+              <span className="bg-muted-foreground absolute top-1.5 -left-[21px] size-2 rounded-full" />
+              <p className="text-sm">{event.text}</p>
+              <p className="text-muted-foreground text-xs">{event.time}</p>
+            </li>
+          ))}
+        </ul>
       </div>
     </div>
   );

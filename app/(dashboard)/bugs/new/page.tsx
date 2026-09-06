@@ -1,5 +1,12 @@
-import { Save, Upload } from "lucide-react";
+"use client";
 
+import { useState, type ChangeEvent, type DragEvent, type FormEvent } from "react";
+
+import { useRouter } from "next/navigation";
+import { Paperclip, Save, Upload, X } from "lucide-react";
+import { toast } from "sonner";
+
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -12,7 +19,45 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 
+const availableLabels = [
+  "UI",
+  "Functional",
+  "API",
+  "Performance",
+  "Security",
+  "Database",
+  "Compatibility",
+  "Regression",
+];
+
 export default function NewBugPage() {
+  const router = useRouter();
+  const [files, setFiles] = useState<File[]>([]);
+  const [labels, setLabels] = useState<string[]>([]);
+
+  function addFiles(fileList: FileList | null) {
+    if (!fileList?.length) return;
+    setFiles((prev) => [...prev, ...Array.from(fileList)]);
+  }
+
+  function handleDrop(e: DragEvent<HTMLDivElement>) {
+    e.preventDefault();
+    addFiles(e.dataTransfer.files);
+  }
+
+  function toggleLabel(label: string) {
+    setLabels((prev) =>
+      prev.includes(label) ? prev.filter((l) => l !== label) : [...prev, label],
+    );
+  }
+
+  function handleSubmit(e: FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    const title = new FormData(e.currentTarget).get("title") as string;
+    toast.success(`Bug "${title}" created`);
+    router.push("/bugs");
+  }
+
   return (
     <div className="max-w-3xl space-y-6">
       <div className="flex items-start justify-between">
@@ -23,14 +68,19 @@ export default function NewBugPage() {
           <h1 className="text-2xl font-semibold tracking-tight">Report New Issue</h1>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline">Cancel</Button>
-          <Button variant="outline">
+          <Button type="button" variant="outline" onClick={() => router.push("/bugs")}>
+            Cancel
+          </Button>
+          <Button type="button" variant="outline" onClick={() => toast.success("Draft saved")}>
             <Save /> Save Draft
           </Button>
         </div>
       </div>
 
-      <form className="border-border bg-card space-y-5 rounded-lg border p-6">
+      <form
+        onSubmit={handleSubmit}
+        className="border-border bg-card space-y-5 rounded-lg border p-6"
+      >
         <div className="space-y-1.5">
           <Label htmlFor="title">Bug Title *</Label>
           <Input
@@ -148,6 +198,28 @@ export default function NewBugPage() {
         </div>
 
         <div className="space-y-1.5">
+          <Label>Labels</Label>
+          <div className="flex flex-wrap gap-2">
+            {availableLabels.map((label) => {
+              const selected = labels.includes(label);
+              return (
+                <Badge
+                  key={label}
+                  variant="outline"
+                  onClick={() => toggleLabel(label)}
+                  className={`cursor-pointer select-none ${
+                    selected ? "bg-primary text-primary-foreground border-transparent" : ""
+                  }`}
+                >
+                  {label}
+                </Badge>
+              );
+            })}
+          </div>
+          <input type="hidden" name="labels" value={labels.join(",")} />
+        </div>
+
+        <div className="space-y-1.5">
           <Label htmlFor="steps">Steps to Reproduce *</Label>
           <Textarea
             id="steps"
@@ -180,16 +252,58 @@ export default function NewBugPage() {
 
         <div className="space-y-1.5">
           <Label>Attachments</Label>
-          <div className="border-border flex flex-col items-center gap-2 rounded-lg border-2 border-dashed p-8 text-center">
+          <div
+            onDragOver={(e) => e.preventDefault()}
+            onDrop={handleDrop}
+            className="border-border flex flex-col items-center gap-2 rounded-lg border-2 border-dashed p-8 text-center"
+          >
             <Upload className="text-muted-foreground size-6" />
             <p className="text-muted-foreground text-sm">
               Drag and drop screenshots, logs, or videos here
             </p>
             <p className="text-muted-foreground text-xs">or click to browse files (Max 50MB)</p>
-            <Button type="button" variant="outline" size="sm" className="mt-1">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="mt-1"
+              render={<label htmlFor="attachments" />}
+            >
               Select Files
             </Button>
+            <input
+              id="attachments"
+              type="file"
+              multiple
+              className="hidden"
+              onChange={(e: ChangeEvent<HTMLInputElement>) => addFiles(e.target.files)}
+            />
           </div>
+          {files.length > 0 ? (
+            <ul className="space-y-1.5 pt-1">
+              {files.map((file, i) => (
+                <li
+                  key={`${file.name}-${i}`}
+                  className="border-border flex items-center justify-between rounded-md border px-3 py-2 text-sm"
+                >
+                  <span className="flex min-w-0 items-center gap-2">
+                    <Paperclip className="text-muted-foreground size-4 shrink-0" />
+                    <span className="truncate">{file.name}</span>
+                    <span className="text-muted-foreground shrink-0 text-xs">
+                      ({Math.max(1, Math.round(file.size / 1024))} KB)
+                    </span>
+                  </span>
+                  <button
+                    type="button"
+                    aria-label={`Remove ${file.name}`}
+                    onClick={() => setFiles((prev) => prev.filter((_, idx) => idx !== i))}
+                  >
+                    <X className="text-muted-foreground hover:text-foreground size-4" />
+                  </button>
+                </li>
+              ))}
+            </ul>
+          ) : null}
         </div>
 
         <div className="flex justify-end pt-2">

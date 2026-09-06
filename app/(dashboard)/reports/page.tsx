@@ -20,7 +20,9 @@ const detectionSource = [
 
 function Card({ children, className = "" }: { children: ReactNode; className?: string }) {
   return (
-    <div className={`border-border bg-card rounded-lg border p-5 ${className}`}>{children}</div>
+    <div className={`border-border bg-card min-w-0 rounded-lg border p-5 ${className}`}>
+      {children}
+    </div>
   );
 }
 

@@ -1,4 +1,10 @@
+"use client";
+
+import type { FormEvent } from "react";
+
+import { useRouter } from "next/navigation";
 import { UserRound } from "lucide-react";
+import { toast } from "sonner";
 
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -35,11 +41,22 @@ export function UserForm({
   mode: "create" | "edit";
   defaultValues?: UserFormValues;
 }) {
+  const router = useRouter();
   const allProjects = defaultValues?.projects === "all" || defaultValues === undefined;
   const selectedProjects = Array.isArray(defaultValues?.projects) ? defaultValues.projects : [];
 
+  function handleSubmit(e: FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    toast.success(
+      mode === "create"
+        ? `${(new FormData(e.currentTarget).get("name") as string) || "User"} created`
+        : "User updated",
+    );
+    router.push("/users");
+  }
+
   return (
-    <form className="border-border bg-card space-y-6 rounded-lg border p-6">
+    <form onSubmit={handleSubmit} className="border-border bg-card space-y-6 rounded-lg border p-6">
       <div className="space-y-1.5">
         <Label>Profile Photo</Label>
         <div className="flex items-center gap-4">
@@ -157,7 +174,7 @@ export function UserForm({
       </div>
 
       <div className="flex justify-end gap-2 pt-2">
-        <Button type="button" variant="outline">
+        <Button type="button" variant="outline" onClick={() => router.push("/users")}>
           Cancel
         </Button>
         <Button type="submit">{mode === "create" ? "Create User" : "Save Changes"}</Button>
