@@ -13,14 +13,23 @@ export function PaginationControls({
   pageSize,
   totalCount,
   basePath,
+  extraParams,
 }: {
   page: number;
   pageSize: number;
   totalCount: number;
   basePath: string;
+  /** Other active query params (filters/search) to preserve when paging. */
+  extraParams?: Record<string, string>;
 }) {
   const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
   if (totalPages <= 1) return null;
+
+  function hrefFor(targetPage: number) {
+    const params = new URLSearchParams(extraParams);
+    params.set("page", String(targetPage));
+    return `${basePath}?${params.toString()}`;
+  }
 
   return (
     <div className="text-muted-foreground flex items-center justify-between px-5 py-3 text-sm">
@@ -36,7 +45,7 @@ export function PaginationControls({
           <Button
             variant="outline"
             size="sm"
-            render={<Link href={`${basePath}?page=${page - 1}`} scroll={false} />}
+            render={<Link href={hrefFor(page - 1)} scroll={false} />}
           >
             <ChevronLeft /> Previous
           </Button>
@@ -49,7 +58,7 @@ export function PaginationControls({
           <Button
             variant="outline"
             size="sm"
-            render={<Link href={`${basePath}?page=${page + 1}`} scroll={false} />}
+            render={<Link href={hrefFor(page + 1)} scroll={false} />}
           >
             Next <ChevronRight />
           </Button>

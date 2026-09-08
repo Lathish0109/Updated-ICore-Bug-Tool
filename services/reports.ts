@@ -9,11 +9,19 @@ const SOURCE_COLORS: Record<Bug["source"], string> = {
 
 const TREND_BUCKETS = 7;
 
-export async function getReportsStats({ from, to }: { from: Date; to: Date }) {
+export async function getReportsStats({
+  from,
+  to,
+  projectId,
+}: {
+  from: Date;
+  to: Date;
+  projectId?: string;
+}) {
   const supabase = await createClient();
-  const { data: bugs } = await supabase
-    .from("bugs")
-    .select("status, source, created_at, updated_at");
+  let query = supabase.from("bugs").select("status, source, created_at, updated_at");
+  if (projectId) query = query.eq("project_id", projectId);
+  const { data: bugs } = await query;
 
   const allBugs = bugs ?? [];
 

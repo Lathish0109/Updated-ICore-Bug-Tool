@@ -4,8 +4,8 @@ import { TrendingDown, TrendingUp } from "lucide-react";
 
 import { ExportBugsButton } from "@/components/shared/export-bugs-button";
 import { HoverTooltip } from "@/components/shared/hover-tooltip";
-import { RangeSelector } from "@/components/shared/range-selector";
-import { resolveRange } from "@/lib/date-range";
+import { ReportsFilterBar } from "@/components/shared/reports-filter-bar";
+import { resolveDateRange } from "@/lib/date-range";
 import { getAllProjectsBasic } from "@/services/projects";
 import { getReportsStats } from "@/services/reports";
 
@@ -19,8 +19,16 @@ function Card({ children, className = "" }: { children: ReactNode; className?: s
 
 export default async function ReportsPage({ searchParams }: PageProps<"/reports">) {
   const params = await searchParams;
-  const range = resolveRange(typeof params.range === "string" ? params.range : undefined);
-  const [stats, projects] = await Promise.all([getReportsStats(range), getAllProjectsBasic()]);
+  const projectId = typeof params.project === "string" ? params.project : undefined;
+  const range = resolveDateRange({
+    range: typeof params.range === "string" ? params.range : undefined,
+    from: typeof params.from === "string" ? params.from : undefined,
+    to: typeof params.to === "string" ? params.to : undefined,
+  });
+  const [stats, projects] = await Promise.all([
+    getReportsStats({ ...range, projectId }),
+    getAllProjectsBasic(),
+  ]);
 
   return (
     <div className="space-y-6">
@@ -31,15 +39,14 @@ export default async function ReportsPage({ searchParams }: PageProps<"/reports"
             Comprehensive overview of issue tracking performance.
           </p>
         </div>
-        <div className="flex items-center gap-2">
-          <RangeSelector basePath="/reports" value={range.value} />
-          <ExportBugsButton
-            projects={projects}
-            defaultFrom={range.from.toISOString().slice(0, 10)}
-            defaultTo={range.to.toISOString().slice(0, 10)}
-          />
-        </div>
+        <ExportBugsButton
+          projectId={projectId}
+          from={range.from.toISOString().slice(0, 10)}
+          to={range.to.toISOString().slice(0, 10)}
+        />
       </div>
+
+      <ReportsFilterBar projects={projects} />
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <Card>
@@ -74,7 +81,7 @@ export default async function ReportsPage({ searchParams }: PageProps<"/reports"
           <p className="text-muted-foreground mt-1 text-sm">
             {stats.avgResolutionDays === null
               ? "No resolved bugs yet"
-              : "Across all active projects"}
+              : "Avg. time from a bug being created to being marked resolved or closed, for bugs in this date range"}
           </p>
         </Card>
       </div>
@@ -91,16 +98,16 @@ export default async function ReportsPage({ searchParams }: PageProps<"/reports"
                   <div key={i} className="flex h-full flex-1 items-end gap-0.5">
                     <HoverTooltip
                       label={`${bucket.rangeLabel}: ${bucket.opened} opened`}
-                      className="h-full flex-1"
+                      className="flex h-full flex-1 items-end"
                     >
                       <div
-                        className="min-h-0.5 w-full rounded-t-sm bg-red-300"
+                        className="min-h-0.5 w-full rounded-t-sm bg-red-500"
                         style={{ height: `${Math.max(bucket.openedPct, 2)}%` }}
                       />
                     </HoverTooltip>
                     <HoverTooltip
                       label={`${bucket.rangeLabel}: ${bucket.closed} closed`}
-                      className="h-full flex-1"
+                      className="flex h-full flex-1 items-end"
                     >
                       <div
                         className="min-h-0.5 w-full rounded-t-sm bg-emerald-400"
@@ -112,7 +119,7 @@ export default async function ReportsPage({ searchParams }: PageProps<"/reports"
               </div>
               <div className="text-muted-foreground mt-3 flex gap-4 text-xs">
                 <span className="flex items-center gap-1.5">
-                  <span className="size-2 rounded-full bg-red-300" /> Opened
+                  <span className="size-2 rounded-full bg-red-500" /> Opened
                 </span>
                 <span className="flex items-center gap-1.5">
                   <span className="size-2 rounded-full bg-emerald-400" /> Closed

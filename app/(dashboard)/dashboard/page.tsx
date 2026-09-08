@@ -143,10 +143,10 @@ export default async function DashboardPage({ searchParams }: PageProps<"/dashbo
                 <HoverTooltip
                   key={i}
                   label={`${bucket.rangeLabel}: ${bucket.count} resolved`}
-                  className="h-full flex-1"
+                  className="flex h-full flex-1 items-end"
                 >
                   <div
-                    className="bg-primary min-h-0.5 w-full rounded-t-sm"
+                    className="min-h-0.5 w-full rounded-t-sm bg-red-500"
                     style={{ height: `${Math.max(bucket.pct, 2)}%` }}
                   />
                 </HoverTooltip>

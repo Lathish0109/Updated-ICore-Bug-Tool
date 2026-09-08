@@ -43,19 +43,39 @@ function mapBugRow(row: RawBugRow): BugWithRelations {
   };
 }
 
+export type BugListFilters = {
+  page?: number;
+  pageSize?: number;
+  search?: string;
+  status?: Bug["status"] | "all";
+  projectId?: string;
+  createdFrom?: string;
+  createdTo?: string;
+};
+
 export async function getBugs(
-  options: { page?: number; pageSize?: number } = {},
+  options: BugListFilters = {},
 ): Promise<{ bugs: BugWithRelations[]; totalCount: number }> {
-  const { page = 1, pageSize = 20 } = options;
-  const from = (page - 1) * pageSize;
-  const to = from + pageSize - 1;
+  const { page = 1, pageSize = 20, search, status, projectId, createdFrom, createdTo } = options;
+  const rangeFrom = (page - 1) * pageSize;
+  const rangeTo = rangeFrom + pageSize - 1;
 
   const supabase = await createClient();
-  const { data, error, count } = await supabase
+  let query = supabase
     .from("bugs")
     .select(BUG_SELECT, { count: "exact" })
-    .order("created_at", { ascending: false })
-    .range(from, to);
+    .order("created_at", { ascending: false });
+
+  if (search) {
+    const escaped = search.trim().replace(/[%_]/g, "\\$&");
+    query = query.ilike("title", `%${escaped}%`);
+  }
+  if (status && status !== "all") query = query.eq("status", status);
+  if (projectId) query = query.eq("project_id", projectId);
+  if (createdFrom) query = query.gte("created_at", createdFrom);
+  if (createdTo) query = query.lte("created_at", createdTo);
+
+  const { data, error, count } = await query.range(rangeFrom, rangeTo);
   if (error || !data) return { bugs: [], totalCount: 0 };
   return { bugs: (data as unknown as RawBugRow[]).map(mapBugRow), totalCount: count ?? 0 };
 }
