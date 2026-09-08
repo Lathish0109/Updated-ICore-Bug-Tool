@@ -8,6 +8,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/shared/empty-state";
+import { PaginationControls } from "@/components/shared/pagination-controls";
 import type { ProjectWithStats } from "@/services/projects";
 
 const statusStyles = {
@@ -17,7 +18,17 @@ const statusStyles = {
 
 type Tab = "All" | "Active" | "Archived";
 
-export function ProjectsList({ projects }: { projects: ProjectWithStats[] }) {
+export function ProjectsList({
+  projects,
+  page,
+  pageSize,
+  totalCount,
+}: {
+  projects: ProjectWithStats[];
+  page: number;
+  pageSize: number;
+  totalCount: number;
+}) {
   const [tab, setTab] = useState<Tab>("All");
 
   const tabs: { label: Tab; count: number }[] = useMemo(
@@ -125,6 +136,17 @@ export function ProjectsList({ projects }: { projects: ProjectWithStats[] }) {
               ) : null}
             </Link>
           ))}
+        </div>
+      )}
+
+      {tab === "All" && (
+        <div className="border-border bg-card rounded-lg border">
+          <PaginationControls
+            page={page}
+            pageSize={pageSize}
+            totalCount={totalCount}
+            basePath="/projects"
+          />
         </div>
       )}
     </div>

@@ -1,8 +1,12 @@
 import { BugsList } from "@/components/shared/bugs-list";
 import { getBugs } from "@/services/bugs";
 
-export default async function BugsPage() {
-  const bugs = await getBugs();
+const PAGE_SIZE = 20;
+
+export default async function BugsPage({ searchParams }: PageProps<"/bugs">) {
+  const params = await searchParams;
+  const page = Math.max(1, Number(params.page) || 1);
+  const { bugs, totalCount } = await getBugs({ page, pageSize: PAGE_SIZE });
 
   return (
     <div className="space-y-6">
@@ -13,7 +17,7 @@ export default async function BugsPage() {
         </p>
       </div>
 
-      <BugsList bugs={bugs} />
+      <BugsList bugs={bugs} page={page} pageSize={PAGE_SIZE} totalCount={totalCount} />
     </div>
   );
 }

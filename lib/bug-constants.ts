@@ -41,3 +41,30 @@ export const SOURCE_LABELS: Record<Bug["source"], string> = {
 export function displayId(projectKey: string, sequenceNumber: number) {
   return `${projectKey}-${sequenceNumber}`;
 }
+
+export const MAX_ATTACHMENT_SIZE_BYTES = 20 * 1024 * 1024;
+
+export const ALLOWED_ATTACHMENT_TYPES = [
+  "image/png",
+  "image/jpeg",
+  "image/gif",
+  "image/webp",
+  "application/pdf",
+  "text/plain",
+  "text/csv",
+  "application/zip",
+  "application/msword",
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  "application/vnd.ms-excel",
+  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+  "video/mp4",
+  "video/webm",
+  "video/quicktime",
+];
+
+export function isAllowedAttachment(file: { type: string; size: number }) {
+  if (file.size <= 0 || file.size > MAX_ATTACHMENT_SIZE_BYTES) return false;
+  // Some browsers/OSes report an empty MIME type for known-safe files (e.g.
+  // .log); allow that rather than rejecting valid attachments.
+  return file.type === "" || ALLOWED_ATTACHMENT_TYPES.includes(file.type);
+}

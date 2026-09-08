@@ -2,6 +2,8 @@ import type { ReactNode } from "react";
 
 import { TrendingDown, TrendingUp } from "lucide-react";
 
+import { RangeSelector } from "@/components/shared/range-selector";
+import { resolveRange } from "@/lib/date-range";
 import { getReportsStats } from "@/services/reports";
 
 function Card({ children, className = "" }: { children: ReactNode; className?: string }) {
@@ -12,16 +14,21 @@ function Card({ children, className = "" }: { children: ReactNode; className?: s
   );
 }
 
-export default async function ReportsPage() {
-  const stats = await getReportsStats();
+export default async function ReportsPage({ searchParams }: PageProps<"/reports">) {
+  const params = await searchParams;
+  const range = resolveRange(typeof params.range === "string" ? params.range : undefined);
+  const stats = await getReportsStats(range);
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight">Project Analytics</h1>
-        <p className="text-muted-foreground mt-1 text-sm">
-          Comprehensive overview of issue tracking performance.
-        </p>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight">Project Analytics</h1>
+          <p className="text-muted-foreground mt-1 text-sm">
+            Comprehensive overview of issue tracking performance.
+          </p>
+        </div>
+        <RangeSelector basePath="/reports" value={range.value} />
       </div>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -30,20 +37,20 @@ export default async function ReportsPage() {
             Total Bugs
           </p>
           <p className="mt-1 text-3xl font-semibold">{stats.totalBugs.toLocaleString()}</p>
-          {stats.monthOverMonthPct === null ? (
+          {stats.periodOverPeriodPct === null ? (
             <p className="text-muted-foreground mt-1 text-sm">Not enough history yet</p>
           ) : (
             <p
               className={`mt-1 flex items-center gap-1 text-sm ${
-                stats.monthOverMonthPct <= 0 ? "text-emerald-600" : "text-amber-600"
+                stats.periodOverPeriodPct <= 0 ? "text-emerald-600" : "text-amber-600"
               }`}
             >
-              {stats.monthOverMonthPct <= 0 ? (
+              {stats.periodOverPeriodPct <= 0 ? (
                 <TrendingDown className="size-4" />
               ) : (
                 <TrendingUp className="size-4" />
               )}
-              {Math.abs(stats.monthOverMonthPct)}% vs last month
+              {Math.abs(stats.periodOverPeriodPct)}% vs previous period
             </p>
           )}
         </Card>

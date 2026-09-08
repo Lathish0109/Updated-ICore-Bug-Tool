@@ -1,9 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Bell, LogOut, Menu, Search } from "lucide-react";
+import { Bell, LogOut, Menu } from "lucide-react";
+import { toast } from "sonner";
 
 import { markAllNotificationsReadAction } from "@/app/(dashboard)/notification-actions";
 import { createClient } from "@/lib/supabase/client";
@@ -18,9 +19,10 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Input } from "@/components/ui/input";
+import { GlobalSearch } from "@/components/shared/global-search";
 import type { Profile } from "@/services/profile";
 import type { NotificationType } from "@/services/notifications";
+import type { Tables } from "@/types/database";
 
 export type NotificationItem = {
   id: string;
@@ -65,6 +67,42 @@ export function AppTopbar({
 }) {
   const router = useRouter();
   const [unread, setUnread] = useState(unreadCount);
+  const [items, setItems] = useState(notifications);
+
+  useEffect(() => {
+    const supabase = createClient();
+    const channel = supabase
+      .channel(`notifications-${profile.id}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "notifications",
+          filter: `recipient_id=eq.${profile.id}`,
+        },
+        (payload) => {
+          const row = payload.new as Tables<"notifications">;
+          const item: NotificationItem = {
+            id: row.id,
+            type: row.type,
+            message: row.message,
+            isRead: row.is_read,
+            bugId: row.bug_id,
+            createdAt: row.created_at,
+            actorName: null,
+          };
+          setItems((prev) => [item, ...prev].slice(0, 10));
+          setUnread((prev) => prev + 1);
+          toast(TYPE_LABELS[item.type], { description: item.message });
+        },
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [profile.id]);
 
   async function handleLogout() {
     const supabase = createClient();
@@ -77,7 +115,6 @@ export function AppTopbar({
     if (open && unread > 0) {
       setUnread(0);
       await markAllNotificationsReadAction();
-      router.refresh();
     }
   }
 
@@ -93,10 +130,7 @@ export function AppTopbar({
         <Menu />
       </Button>
 
-      <div className="relative max-w-md flex-1">
-        <Search className="text-muted-foreground pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2" />
-        <Input placeholder="Search bugs, projects, or users..." className="pl-9" />
-      </div>
+      <GlobalSearch />
 
       <div className="ml-auto flex items-center gap-2">
         <DropdownMenu onOpenChange={handleNotificationsOpen}>
@@ -118,12 +152,12 @@ export function AppTopbar({
           <DropdownMenuContent align="end" className="w-80">
             <DropdownMenuLabel>Notifications</DropdownMenuLabel>
             <DropdownMenuSeparator />
-            {notifications.length === 0 ? (
+            {items.length === 0 ? (
               <p className="text-muted-foreground px-2 py-4 text-center text-sm">
                 No notifications yet.
               </p>
             ) : (
-              notifications.map((n) => (
+              items.map((n) => (
                 <DropdownMenuItem
                   key={n.id}
                   className="flex-col items-start gap-0.5 py-2"

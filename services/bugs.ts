@@ -1,6 +1,13 @@
 import { createClient } from "@/lib/supabase/server";
 import type { TablesInsert, TablesUpdate } from "@/types/database";
-import { STATUS_LABELS, type Bug, type BugLabel, type BugWithRelations } from "@/lib/bug-constants";
+import {
+  isAllowedAttachment,
+  MAX_ATTACHMENT_SIZE_BYTES,
+  STATUS_LABELS,
+  type Bug,
+  type BugLabel,
+  type BugWithRelations,
+} from "@/lib/bug-constants";
 import { notify } from "@/services/notifications";
 
 export type { Bug, BugLabel, BugWithRelations };
@@ -36,14 +43,21 @@ function mapBugRow(row: RawBugRow): BugWithRelations {
   };
 }
 
-export async function getBugs(): Promise<BugWithRelations[]> {
+export async function getBugs(
+  options: { page?: number; pageSize?: number } = {},
+): Promise<{ bugs: BugWithRelations[]; totalCount: number }> {
+  const { page = 1, pageSize = 20 } = options;
+  const from = (page - 1) * pageSize;
+  const to = from + pageSize - 1;
+
   const supabase = await createClient();
-  const { data, error } = await supabase
+  const { data, error, count } = await supabase
     .from("bugs")
-    .select(BUG_SELECT)
-    .order("created_at", { ascending: false });
-  if (error || !data) return [];
-  return (data as unknown as RawBugRow[]).map(mapBugRow);
+    .select(BUG_SELECT, { count: "exact" })
+    .order("created_at", { ascending: false })
+    .range(from, to);
+  if (error || !data) return { bugs: [], totalCount: 0 };
+  return { bugs: (data as unknown as RawBugRow[]).map(mapBugRow), totalCount: count ?? 0 };
 }
 
 export async function getBug(id: string): Promise<BugWithRelations | null> {
@@ -334,6 +348,15 @@ export async function addAttachment(bugId: string, file: File) {
   } = await supabase.auth.getUser();
   if (!user) return { error: "Not signed in." };
 
+  if (!isAllowedAttachment(file)) {
+    return {
+      error:
+        file.size > MAX_ATTACHMENT_SIZE_BYTES
+          ? `"${file.name}" exceeds the 20MB limit.`
+          : `"${file.name}" is an unsupported file type.`,
+    };
+  }
+
   const path = `${bugId}/${Date.now()}-${file.name}`;
   const { error: uploadError } = await supabase.storage.from("bug-attachments").upload(path, file);
   if (uploadError) return { error: "Couldn't upload file." };
@@ -346,4 +369,29 @@ export async function addAttachment(bugId: string, file: File) {
     uploaded_by: user.id,
   });
   return { error: error ? "Couldn't save attachment record." : null };
+}
+
+export async function deleteAttachment(attachmentId: string) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "Not signed in." };
+
+  const { data: attachment } = await supabase
+    .from("bug_attachments")
+    .select("bug_id, file_path")
+    .eq("id", attachmentId)
+    .single();
+  if (!attachment) return { error: "Attachment not found." };
+
+  const { error: deleteError } = await supabase
+    .from("bug_attachments")
+    .delete()
+    .eq("id", attachmentId);
+  if (deleteError) return { error: "Couldn't delete attachment." };
+
+  await supabase.storage.from("bug-attachments").remove([attachment.file_path]);
+
+  return { error: null, bugId: attachment.bug_id };
 }

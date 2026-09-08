@@ -18,7 +18,13 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import type { BugLabel, Bug } from "@/lib/bug-constants";
+import {
+  ALLOWED_ATTACHMENT_TYPES,
+  isAllowedAttachment,
+  MAX_ATTACHMENT_SIZE_BYTES,
+  type Bug,
+  type BugLabel,
+} from "@/lib/bug-constants";
 
 const availableLabels: BugLabel[] = [
   "UI",
@@ -88,8 +94,25 @@ export function NewBugForm({
 
   function addFiles(fileList: FileList | null) {
     if (!fileList?.length) return;
+
+    const incoming = Array.from(fileList);
+    const accepted: File[] = [];
+    for (const file of incoming) {
+      if (!isAllowedAttachment(file)) {
+        toast.error(`"${file.name}" was skipped`, {
+          description:
+            file.size > MAX_ATTACHMENT_SIZE_BYTES
+              ? "File exceeds the 20MB limit."
+              : "Unsupported file type.",
+        });
+        continue;
+      }
+      accepted.push(file);
+    }
+    if (accepted.length === 0) return;
+
     setFiles((prev) => {
-      const next = [...prev, ...Array.from(fileList)];
+      const next = [...prev, ...accepted];
       syncInputFiles(next);
       return next;
     });
@@ -352,7 +375,9 @@ export function NewBugForm({
             <p className="text-muted-foreground text-sm">
               Drag and drop screenshots, logs, or videos here
             </p>
-            <p className="text-muted-foreground text-xs">or click to browse files (Max 50MB)</p>
+            <p className="text-muted-foreground text-xs">
+              or click to browse files (Max 20MB each)
+            </p>
             <Button
               type="button"
               variant="outline"
@@ -368,6 +393,7 @@ export function NewBugForm({
               ref={fileInputRef}
               type="file"
               multiple
+              accept={ALLOWED_ATTACHMENT_TYPES.join(",")}
               className="hidden"
               onChange={(e: ChangeEvent<HTMLInputElement>) => addFiles(e.target.files)}
             />

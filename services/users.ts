@@ -9,21 +9,33 @@ export type UserWithStats = Profile & {
   activeBugs: number;
 };
 
-export async function getUsers(): Promise<UserWithStats[]> {
+export async function getUsers(
+  options: { page?: number; pageSize?: number } = {},
+): Promise<{ users: UserWithStats[]; totalCount: number }> {
+  const { page = 1, pageSize = 15 } = options;
+  const from = (page - 1) * pageSize;
+  const to = from + pageSize - 1;
+
   const supabase = await createClient();
 
-  const { data: profiles, error } = await supabase
+  const {
+    data: profiles,
+    error,
+    count,
+  } = await supabase
     .from("profiles")
-    .select("*")
-    .order("created_at", { ascending: true });
-  if (error || !profiles) return [];
+    .select("*", { count: "exact" })
+    .order("created_at", { ascending: true })
+    .range(from, to);
+  if (error || !profiles) return { users: [], totalCount: 0 };
 
+  const profileIds = profiles.map((p) => p.id);
   const [{ data: memberships }, { data: bugs }] = await Promise.all([
-    supabase.from("project_members").select("user_id, projects(name)"),
-    supabase.from("bugs").select("assignee_id, status"),
+    supabase.from("project_members").select("user_id, projects(name)").in("user_id", profileIds),
+    supabase.from("bugs").select("assignee_id, status").in("assignee_id", profileIds),
   ]);
 
-  return profiles.map((profile) => {
+  const users = profiles.map((profile) => {
     const projectNames = (memberships ?? [])
       .filter((m) => m.user_id === profile.id)
       .map((m) => (m.projects as unknown as { name: string } | null)?.name)
@@ -35,6 +47,8 @@ export async function getUsers(): Promise<UserWithStats[]> {
 
     return { ...profile, projectNames, activeBugs };
   });
+
+  return { users, totalCount: count ?? 0 };
 }
 
 export async function getUser(id: string): Promise<(Profile & { projectIds: string[] }) | null> {

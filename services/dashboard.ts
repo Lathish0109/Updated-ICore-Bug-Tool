@@ -9,10 +9,9 @@ const BUG_STATUS_STYLES: Record<Bug["status"], string> = {
 };
 
 const TREND_BUCKETS = 10;
-const TREND_DAYS = 30;
-const BUCKET_SIZE_DAYS = TREND_DAYS / TREND_BUCKETS;
 
-export async function getDashboardStats() {
+export async function getDashboardStats({ trendDays = 30 }: { trendDays?: number } = {}) {
+  const bucketSizeDays = trendDays / TREND_BUCKETS;
   const supabase = await createClient();
 
   const [{ count: totalProjects }, { count: activeUsers }, { data: bugs }] = await Promise.all([
@@ -43,8 +42,8 @@ export async function getDashboardStats() {
 
   const now = Date.now();
   const resolutionTrend = Array.from({ length: TREND_BUCKETS }, (_, i) => {
-    const bucketEnd = now - i * BUCKET_SIZE_DAYS * 24 * 60 * 60 * 1000;
-    const bucketStart = bucketEnd - BUCKET_SIZE_DAYS * 24 * 60 * 60 * 1000;
+    const bucketEnd = now - i * bucketSizeDays * 24 * 60 * 60 * 1000;
+    const bucketStart = bucketEnd - bucketSizeDays * 24 * 60 * 60 * 1000;
     return allBugs.filter((b) => {
       if (b.status !== "resolved") return false;
       const t = new Date(b.updated_at).getTime();

@@ -16,6 +16,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { EmptyState } from "@/components/shared/empty-state";
+import { PaginationControls } from "@/components/shared/pagination-controls";
 import type { UserWithStats } from "@/services/users";
 
 const roleStyles: Record<string, string> = {
@@ -39,7 +40,17 @@ const statusStyles: Record<string, string> = {
   inactive: "bg-slate-100 text-slate-600",
 };
 
-export function UsersList({ users }: { users: UserWithStats[] }) {
+export function UsersList({
+  users,
+  page,
+  pageSize,
+  totalCount,
+}: {
+  users: UserWithStats[];
+  page: number;
+  pageSize: number;
+  totalCount: number;
+}) {
   const [search, setSearch] = useState("");
   const [role, setRole] = useState("all-roles");
   const [status, setStatus] = useState("all-status");
@@ -203,11 +214,20 @@ export function UsersList({ users }: { users: UserWithStats[] }) {
                 ))}
               </tbody>
             </table>
-            <div className="text-muted-foreground flex items-center justify-between px-5 py-3 text-sm">
-              <span>
-                Showing {filteredUsers.length} of {users.length} users
-              </span>
-            </div>
+            {hasActiveFilters ? (
+              <div className="text-muted-foreground flex items-center justify-between px-5 py-3 text-sm">
+                <span>
+                  Showing {filteredUsers.length} of {users.length} users on this page
+                </span>
+              </div>
+            ) : (
+              <PaginationControls
+                page={page}
+                pageSize={pageSize}
+                totalCount={totalCount}
+                basePath="/users"
+              />
+            )}
           </>
         )}
       </div>

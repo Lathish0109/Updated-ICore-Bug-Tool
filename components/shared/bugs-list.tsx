@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { EmptyState } from "@/components/shared/empty-state";
+import { PaginationControls } from "@/components/shared/pagination-controls";
 import {
   displayId,
   PRIORITY_LABELS,
@@ -31,7 +32,17 @@ const statusDotStyles: Record<string, string> = {
   closed: "bg-slate-400",
 };
 
-export function BugsList({ bugs }: { bugs: BugWithRelations[] }) {
+export function BugsList({
+  bugs,
+  page,
+  pageSize,
+  totalCount,
+}: {
+  bugs: BugWithRelations[];
+  page: number;
+  pageSize: number;
+  totalCount: number;
+}) {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<BugWithRelations["status"] | "all">("all");
 
@@ -177,11 +188,20 @@ export function BugsList({ bugs }: { bugs: BugWithRelations[] }) {
                 ))}
               </tbody>
             </table>
-            <div className="text-muted-foreground flex items-center justify-between px-5 py-3 text-sm">
-              <span>
-                Showing {filteredBugs.length} of {bugs.length} bugs
-              </span>
-            </div>
+            {hasActiveFilters ? (
+              <div className="text-muted-foreground flex items-center justify-between px-5 py-3 text-sm">
+                <span>
+                  Showing {filteredBugs.length} of {bugs.length} bugs on this page
+                </span>
+              </div>
+            ) : (
+              <PaginationControls
+                page={page}
+                pageSize={pageSize}
+                totalCount={totalCount}
+                basePath="/bugs"
+              />
+            )}
           </>
         )}
       </div>

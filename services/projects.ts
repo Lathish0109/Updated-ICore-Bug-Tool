@@ -25,17 +25,28 @@ function colorFor(key: string) {
   return PROJECT_COLORS[hash % PROJECT_COLORS.length];
 }
 
-export async function getProjects(): Promise<ProjectWithStats[]> {
+export async function getProjects(
+  options: { page?: number; pageSize?: number } = {},
+): Promise<{ projects: ProjectWithStats[]; totalCount: number }> {
+  const { page = 1, pageSize = 12 } = options;
+  const from = (page - 1) * pageSize;
+  const to = from + pageSize - 1;
+
   const supabase = await createClient();
 
-  const { data: projects, error } = await supabase
+  const {
+    data: projects,
+    error,
+    count,
+  } = await supabase
     .from("projects")
-    .select("*")
-    .order("created_at", { ascending: false });
-  if (error || !projects) return [];
+    .select("*", { count: "exact" })
+    .order("created_at", { ascending: false })
+    .range(from, to);
+  if (error || !projects) return { projects: [], totalCount: 0 };
 
   const projectIds = projects.map((p) => p.id);
-  if (projectIds.length === 0) return [];
+  if (projectIds.length === 0) return { projects: [], totalCount: count ?? 0 };
 
   const [{ data: bugs }, { data: members }] = await Promise.all([
     supabase.from("bugs").select("project_id, status, updated_at").in("project_id", projectIds),
@@ -47,30 +58,33 @@ export async function getProjects(): Promise<ProjectWithStats[]> {
 
   const sevenDaysAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
 
-  return projects.map((project) => {
-    const projectBugs = bugs?.filter((b) => b.project_id === project.id) ?? [];
-    const openBugs = projectBugs.filter(
-      (b) => b.status === "open" || b.status === "in_progress",
-    ).length;
-    const resolved7d = projectBugs.filter(
-      (b) => b.status === "resolved" && new Date(b.updated_at).getTime() >= sevenDaysAgo,
-    ).length;
-    const projectMembers = (members ?? [])
-      .filter((m) => m.project_id === project.id)
-      .map((m) => ({
-        id: m.user_id,
-        name: (m.profiles as unknown as { full_name: string } | null)?.full_name ?? "Unknown",
-      }));
+  return {
+    projects: projects.map((project) => {
+      const projectBugs = bugs?.filter((b) => b.project_id === project.id) ?? [];
+      const openBugs = projectBugs.filter(
+        (b) => b.status === "open" || b.status === "in_progress",
+      ).length;
+      const resolved7d = projectBugs.filter(
+        (b) => b.status === "resolved" && new Date(b.updated_at).getTime() >= sevenDaysAgo,
+      ).length;
+      const projectMembers = (members ?? [])
+        .filter((m) => m.project_id === project.id)
+        .map((m) => ({
+          id: m.user_id,
+          name: (m.profiles as unknown as { full_name: string } | null)?.full_name ?? "Unknown",
+        }));
 
-    return {
-      ...project,
-      initials: project.key.slice(0, 3).toUpperCase(),
-      colorClassName: colorFor(project.key),
-      openBugs,
-      resolved7d,
-      members: projectMembers,
-    };
-  });
+      return {
+        ...project,
+        initials: project.key.slice(0, 3).toUpperCase(),
+        colorClassName: colorFor(project.key),
+        openBugs,
+        resolved7d,
+        members: projectMembers,
+      };
+    }),
+    totalCount: count ?? 0,
+  };
 }
 
 export async function getProject(id: string): Promise<ProjectWithStats | null> {

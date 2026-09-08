@@ -5,7 +5,9 @@ import { Bug, FolderKanban, Users } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { EmptyState } from "@/components/shared/empty-state";
+import { RangeSelector } from "@/components/shared/range-selector";
 import { displayId, PRIORITY_LABELS, STATUS_LABELS } from "@/lib/bug-constants";
+import { resolveRange } from "@/lib/date-range";
 import { getBugs } from "@/services/bugs";
 import { getDashboardStats } from "@/services/dashboard";
 
@@ -31,9 +33,13 @@ function Card({ children, className = "" }: { children: ReactNode; className?: s
   );
 }
 
-export default async function DashboardPage() {
-  const [stats, bugs] = await Promise.all([getDashboardStats(), getBugs()]);
-  const recentBugs = bugs.slice(0, 5);
+export default async function DashboardPage({ searchParams }: PageProps<"/dashboard">) {
+  const params = await searchParams;
+  const range = resolveRange(typeof params.range === "string" ? params.range : undefined);
+  const [stats, { bugs: recentBugs }] = await Promise.all([
+    getDashboardStats({ trendDays: range.days }),
+    getBugs({ pageSize: 5 }),
+  ]);
 
   return (
     <div className="space-y-6">
@@ -97,7 +103,7 @@ export default async function DashboardPage() {
           <p className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
             Bugs by Priority
           </p>
-          {bugs.length === 0 ? (
+          {!stats.hasBugs ? (
             <p className="text-muted-foreground mt-4 text-sm">No bugs to summarize yet.</p>
           ) : (
             <div className="mt-4 space-y-3">
@@ -117,9 +123,12 @@ export default async function DashboardPage() {
         </Card>
 
         <Card>
-          <p className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
-            Resolution Trend (30 Days)
-          </p>
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <p className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
+              Resolution Trend
+            </p>
+            <RangeSelector basePath="/dashboard" value={range.value} />
+          </div>
           {stats.hasBugs ? (
             <div className="mt-4 flex h-32 items-end gap-1.5">
               {stats.resolutionTrend.map((value, i) => (

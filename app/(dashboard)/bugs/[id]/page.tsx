@@ -5,6 +5,7 @@ import { notFound } from "next/navigation";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { AttachmentDeleteButton } from "@/components/shared/attachment-delete-button";
 import { CommentForm } from "@/components/shared/comment-form";
 import { StatusSelect } from "@/components/shared/status-select";
 import { formatRelativeTime } from "@/lib/format";
@@ -133,21 +134,37 @@ export default async function BugDetailPage({ params }: PageProps<"/bugs/[id]">)
             Attachments
           </p>
           <ul className="mt-3 space-y-2">
-            {attachments.map((file) => (
-              <li key={file.id}>
-                <a
-                  href={file.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-primary text-sm hover:underline"
-                >
-                  {file.file_name}
-                </a>
-                <span className="text-muted-foreground ml-2 text-xs">
-                  ({Math.max(1, Math.round(file.file_size / 1024))} KB)
-                </span>
-              </li>
-            ))}
+            {attachments.map((file) => {
+              const canDelete =
+                !!profile &&
+                (profile.role === "admin" ||
+                  profile.role === "manager" ||
+                  file.uploaded_by === profile.id);
+              return (
+                <li key={file.id} className="flex items-center justify-between gap-2">
+                  <div>
+                    <a
+                      href={file.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-primary text-sm hover:underline"
+                    >
+                      {file.file_name}
+                    </a>
+                    <span className="text-muted-foreground ml-2 text-xs">
+                      ({Math.max(1, Math.round(file.file_size / 1024))} KB)
+                    </span>
+                  </div>
+                  {canDelete ? (
+                    <AttachmentDeleteButton
+                      attachmentId={file.id}
+                      bugId={bug.id}
+                      fileName={file.file_name}
+                    />
+                  ) : null}
+                </li>
+              );
+            })}
           </ul>
         </div>
       ) : null}
