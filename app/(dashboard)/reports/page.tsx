@@ -2,8 +2,11 @@ import type { ReactNode } from "react";
 
 import { TrendingDown, TrendingUp } from "lucide-react";
 
+import { ExportBugsButton } from "@/components/shared/export-bugs-button";
+import { HoverTooltip } from "@/components/shared/hover-tooltip";
 import { RangeSelector } from "@/components/shared/range-selector";
 import { resolveRange } from "@/lib/date-range";
+import { getAllProjectsBasic } from "@/services/projects";
 import { getReportsStats } from "@/services/reports";
 
 function Card({ children, className = "" }: { children: ReactNode; className?: string }) {
@@ -17,7 +20,7 @@ function Card({ children, className = "" }: { children: ReactNode; className?: s
 export default async function ReportsPage({ searchParams }: PageProps<"/reports">) {
   const params = await searchParams;
   const range = resolveRange(typeof params.range === "string" ? params.range : undefined);
-  const stats = await getReportsStats(range);
+  const [stats, projects] = await Promise.all([getReportsStats(range), getAllProjectsBasic()]);
 
   return (
     <div className="space-y-6">
@@ -28,7 +31,14 @@ export default async function ReportsPage({ searchParams }: PageProps<"/reports"
             Comprehensive overview of issue tracking performance.
           </p>
         </div>
-        <RangeSelector basePath="/reports" value={range.value} />
+        <div className="flex items-center gap-2">
+          <RangeSelector basePath="/reports" value={range.value} />
+          <ExportBugsButton
+            projects={projects}
+            defaultFrom={range.from.toISOString().slice(0, 10)}
+            defaultTo={range.to.toISOString().slice(0, 10)}
+          />
+        </div>
       </div>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -77,16 +87,26 @@ export default async function ReportsPage({ searchParams }: PageProps<"/reports"
           {stats.hasBugs ? (
             <>
               <div className="mt-4 flex h-40 items-end gap-3">
-                {stats.trend.map((week, i) => (
+                {stats.trend.map((bucket, i) => (
                   <div key={i} className="flex h-full flex-1 items-end gap-0.5">
-                    <div
-                      className="min-h-0.5 flex-1 rounded-t-sm bg-red-300"
-                      style={{ height: `${Math.max(week.opened, 2)}%` }}
-                    />
-                    <div
-                      className="min-h-0.5 flex-1 rounded-t-sm bg-emerald-400"
-                      style={{ height: `${Math.max(week.closed, 2)}%` }}
-                    />
+                    <HoverTooltip
+                      label={`${bucket.rangeLabel}: ${bucket.opened} opened`}
+                      className="h-full flex-1"
+                    >
+                      <div
+                        className="min-h-0.5 w-full rounded-t-sm bg-red-300"
+                        style={{ height: `${Math.max(bucket.openedPct, 2)}%` }}
+                      />
+                    </HoverTooltip>
+                    <HoverTooltip
+                      label={`${bucket.rangeLabel}: ${bucket.closed} closed`}
+                      className="h-full flex-1"
+                    >
+                      <div
+                        className="min-h-0.5 w-full rounded-t-sm bg-emerald-400"
+                        style={{ height: `${Math.max(bucket.closedPct, 2)}%` }}
+                      />
+                    </HoverTooltip>
                   </div>
                 ))}
               </div>
@@ -110,18 +130,20 @@ export default async function ReportsPage({ searchParams }: PageProps<"/reports"
           </p>
           {stats.hasBugs ? (
             <div className="mt-4 space-y-3">
-              {stats.detectionSource.map(({ label, pct, className }) => (
+              {stats.detectionSource.map(({ label, count, pct, className }) => (
                 <div key={label}>
                   <div className="mb-1 flex justify-between text-xs">
                     <span className="text-foreground font-medium">{label}</span>
                     <span className="text-muted-foreground">{pct}%</span>
                   </div>
-                  <div className="bg-accent h-2 overflow-hidden rounded-full">
-                    <div
-                      className={`h-full rounded-full ${className}`}
-                      style={{ width: `${pct}%` }}
-                    />
-                  </div>
+                  <HoverTooltip label={`${label}: ${count} (${pct}%)`} className="block">
+                    <div className="bg-accent h-2 overflow-hidden rounded-full">
+                      <div
+                        className={`h-full rounded-full ${className}`}
+                        style={{ width: `${pct}%` }}
+                      />
+                    </div>
+                  </HoverTooltip>
                 </div>
               ))}
             </div>

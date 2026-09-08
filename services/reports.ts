@@ -46,6 +46,7 @@ export async function getReportsStats({ from, to }: { from: Date; to: Date }) {
         }, 0) / resolvedOrClosed.length
       : null;
 
+  const dateFormatter = new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric" });
   const bucketMs = rangeMs / TREND_BUCKETS;
   const trend = Array.from({ length: TREND_BUCKETS }, (_, i) => {
     const bucketStart = fromMs + i * bucketMs;
@@ -59,7 +60,8 @@ export async function getReportsStats({ from, to }: { from: Date; to: Date }) {
       const t = new Date(b.updated_at).getTime();
       return t >= bucketStart && t < bucketEnd;
     }).length;
-    return { opened, closed };
+    const rangeLabel = `${dateFormatter.format(new Date(bucketStart))} - ${dateFormatter.format(new Date(bucketEnd))}`;
+    return { opened, closed, rangeLabel };
   });
   const maxTrendValue = Math.max(1, ...trend.flatMap((w) => [w.opened, w.closed]));
 
@@ -67,6 +69,7 @@ export async function getReportsStats({ from, to }: { from: Date; to: Date }) {
     const count = inRange.filter((b) => b.source === source).length;
     return {
       label: SOURCE_LABELS[source],
+      count,
       pct: totalBugs > 0 ? Math.round((count / totalBugs) * 100) : 0,
       className: SOURCE_COLORS[source],
     };
@@ -77,8 +80,9 @@ export async function getReportsStats({ from, to }: { from: Date; to: Date }) {
     periodOverPeriodPct,
     avgResolutionDays,
     trend: trend.map((w) => ({
-      opened: Math.round((w.opened / maxTrendValue) * 100),
-      closed: Math.round((w.closed / maxTrendValue) * 100),
+      ...w,
+      openedPct: Math.round((w.opened / maxTrendValue) * 100),
+      closedPct: Math.round((w.closed / maxTrendValue) * 100),
     })),
     detectionSource,
     hasBugs: totalBugs > 0,

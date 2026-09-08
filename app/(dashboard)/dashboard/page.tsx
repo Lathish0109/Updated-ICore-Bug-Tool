@@ -5,6 +5,7 @@ import { Bug, FolderKanban, Users } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { EmptyState } from "@/components/shared/empty-state";
+import { HoverTooltip } from "@/components/shared/hover-tooltip";
 import { RangeSelector } from "@/components/shared/range-selector";
 import { displayId, PRIORITY_LABELS, STATUS_LABELS } from "@/lib/bug-constants";
 import { resolveRange } from "@/lib/date-range";
@@ -76,11 +77,13 @@ export default async function DashboardPage({ searchParams }: PageProps<"/dashbo
             <>
               <div className="border-border mt-3 flex h-2 overflow-hidden rounded-full border">
                 {stats.bugBreakdown.map(({ label, count, className }) => (
-                  <div
+                  <HoverTooltip
                     key={label}
-                    className={className}
+                    label={`${label}: ${count}`}
                     style={{ width: `${(count / stats.totalActiveBugs) * 100}%` }}
-                  />
+                  >
+                    <div className={`h-2 w-full ${className}`} />
+                  </HoverTooltip>
                 ))}
               </div>
               <div className="text-muted-foreground mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs">
@@ -107,15 +110,20 @@ export default async function DashboardPage({ searchParams }: PageProps<"/dashbo
             <p className="text-muted-foreground mt-4 text-sm">No bugs to summarize yet.</p>
           ) : (
             <div className="mt-4 space-y-3">
-              {stats.priorityBreakdown.map(({ label, pct }) => (
+              {stats.priorityBreakdown.map(({ label, count, pct }) => (
                 <div key={label}>
                   <div className="mb-1 flex justify-between text-xs">
                     <span className="text-foreground font-medium">{label}</span>
                     <span className="text-muted-foreground">{pct}%</span>
                   </div>
-                  <div className="bg-accent h-2 overflow-hidden rounded-full">
-                    <div className="bg-primary h-full rounded-full" style={{ width: `${pct}%` }} />
-                  </div>
+                  <HoverTooltip label={`${label}: ${count} (${pct}%)`} className="block">
+                    <div className="bg-accent h-2 overflow-hidden rounded-full">
+                      <div
+                        className="bg-primary h-full rounded-full"
+                        style={{ width: `${pct}%` }}
+                      />
+                    </div>
+                  </HoverTooltip>
                 </div>
               ))}
             </div>
@@ -131,12 +139,17 @@ export default async function DashboardPage({ searchParams }: PageProps<"/dashbo
           </div>
           {stats.hasBugs ? (
             <div className="mt-4 flex h-32 items-end gap-1.5">
-              {stats.resolutionTrend.map((value, i) => (
-                <div
+              {stats.resolutionTrend.map((bucket, i) => (
+                <HoverTooltip
                   key={i}
-                  className="bg-primary min-h-0.5 flex-1 rounded-t-sm"
-                  style={{ height: `${Math.max(value, 2)}%` }}
-                />
+                  label={`${bucket.rangeLabel}: ${bucket.count} resolved`}
+                  className="h-full flex-1"
+                >
+                  <div
+                    className="bg-primary min-h-0.5 w-full rounded-t-sm"
+                    style={{ height: `${Math.max(bucket.pct, 2)}%` }}
+                  />
+                </HoverTooltip>
               ))}
             </div>
           ) : (

@@ -41,16 +41,19 @@ export async function getDashboardStats({ trendDays = 30 }: { trendDays?: number
   });
 
   const now = Date.now();
+  const dateFormatter = new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric" });
   const resolutionTrend = Array.from({ length: TREND_BUCKETS }, (_, i) => {
     const bucketEnd = now - i * bucketSizeDays * 24 * 60 * 60 * 1000;
     const bucketStart = bucketEnd - bucketSizeDays * 24 * 60 * 60 * 1000;
-    return allBugs.filter((b) => {
+    const count = allBugs.filter((b) => {
       if (b.status !== "resolved") return false;
       const t = new Date(b.updated_at).getTime();
       return t >= bucketStart && t < bucketEnd;
     }).length;
+    const rangeLabel = `${dateFormatter.format(new Date(bucketStart))} - ${dateFormatter.format(new Date(bucketEnd))}`;
+    return { count, rangeLabel };
   }).reverse();
-  const maxTrend = Math.max(1, ...resolutionTrend);
+  const maxTrend = Math.max(1, ...resolutionTrend.map((b) => b.count));
 
   return {
     totalProjects: totalProjects ?? 0,
@@ -58,7 +61,10 @@ export async function getDashboardStats({ trendDays = 30 }: { trendDays?: number
     bugBreakdown,
     totalActiveBugs,
     priorityBreakdown,
-    resolutionTrend: resolutionTrend.map((count) => Math.round((count / maxTrend) * 100)),
+    resolutionTrend: resolutionTrend.map((b) => ({
+      ...b,
+      pct: Math.round((b.count / maxTrend) * 100),
+    })),
     hasBugs: allBugs.length > 0,
   };
 }
