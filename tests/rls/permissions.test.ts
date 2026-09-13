@@ -255,13 +255,13 @@ describe("Bug attachments", () => {
   });
 });
 
-describe("Bug comments (finding: no role gate, project membership only)", () => {
-  it("Viewer -- meant to be read-only -- can currently comment, per the policy as written", async () => {
-    const { data, error } = await viewer
+describe("Bug comments", () => {
+  it("role gate on comments: Tester can comment, Viewer (read-only) cannot", async () => {
+    const { data, error } = await tester
       .from("bug_comments")
       .insert({
         bug_id: fixtures.bugId,
-        author_id: fixtures.users.viewer.id,
+        author_id: fixtures.users.tester.id,
         body: "RLS test comment",
       })
       .select("id")
@@ -270,6 +270,13 @@ describe("Bug comments (finding: no role gate, project membership only)", () => 
     if (data?.id) {
       await createServiceClient().from("bug_comments").delete().eq("id", data.id);
     }
+
+    const { error: viewerErr } = await viewer.from("bug_comments").insert({
+      bug_id: fixtures.bugId,
+      author_id: fixtures.users.viewer.id,
+      body: "should not exist",
+    });
+    expect(viewerErr).not.toBeNull();
   });
 });
 
@@ -286,7 +293,7 @@ describe("Profiles (the admin-seeded model's actual enforcement)", () => {
     }
   });
 
-  it("finding: Manager cannot change another user's role -- only Admin can (profiles uses is_admin(), not is_admin_or_manager())", async () => {
+  it("confirmed intentional: only Admin can change another user's role -- Manager cannot (matches the admin-seeded user-management model)", async () => {
     const { data: managerAttempt, error: managerErr } = await manager
       .from("profiles")
       .update({ status: "active" })
