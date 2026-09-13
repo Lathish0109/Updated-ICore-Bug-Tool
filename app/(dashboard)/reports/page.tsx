@@ -93,7 +93,7 @@ export default async function ReportsPage({ searchParams }: PageProps<"/reports"
           </p>
           {stats.hasBugs ? (
             <>
-              <div className="mt-4 flex h-40 items-end gap-3">
+              <div data-testid="opened-closed-chart" className="mt-4 flex h-40 items-end gap-3">
                 {stats.trend.map((bucket, i) => (
                   <div key={i} className="flex h-full flex-1 items-end gap-0.5">
                     <HoverTooltip
@@ -101,6 +101,7 @@ export default async function ReportsPage({ searchParams }: PageProps<"/reports"
                       className="flex h-full flex-1 items-end"
                     >
                       <div
+                        data-testid="opened-bar"
                         className="min-h-0.5 w-full rounded-t-sm bg-red-500"
                         style={{ height: `${Math.max(bucket.openedPct, 2)}%` }}
                       />

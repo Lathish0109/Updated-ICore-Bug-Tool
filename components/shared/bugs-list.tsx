@@ -40,16 +40,18 @@ export function BugsList({
   totalCount: number;
   extraParams?: Record<string, string>;
 }) {
+  const hasActiveFilters = Object.keys(extraParams ?? {}).length > 0;
+
   return (
     <div className="border-border bg-card overflow-x-auto rounded-lg border">
       {bugs.length === 0 ? (
         <EmptyState
           icon={BugIcon}
-          title={totalCount === 0 ? "No bugs reported yet" : "No bugs match your filters"}
+          title={hasActiveFilters ? "No bugs match your filters" : "No bugs reported yet"}
           description={
-            totalCount === 0
-              ? "Create a bug to start tracking issues."
-              : "Try adjusting your search or filters."
+            hasActiveFilters
+              ? "Try adjusting your search or filters."
+              : "Create a bug to start tracking issues."
           }
         />
       ) : (

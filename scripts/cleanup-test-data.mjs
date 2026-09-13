@@ -1,7 +1,7 @@
-// Safety net for the RLS test suite (tests/rls). If a run crashes between
-// seeding and its afterAll cleanup, this sweeps any TEST_RLS-tagged rows and
-// icoretest.local auth users left behind. Safe to run any time -- it's a
-// no-op if there's nothing to clean up.
+// Safety net for the RLS (tests/rls) and E2E (tests/e2e) suites. If a run
+// crashes before its own cleanup/globalTeardown runs, this sweeps any
+// TEST_RLS/TEST_E2E-tagged rows and icoretest.local auth users left behind.
+// Safe to run any time -- it's a no-op if there's nothing to clean up.
 //
 // Usage: node scripts/cleanup-test-data.mjs
 
@@ -33,7 +33,7 @@ const supabase = createClient(SUPABASE_URL, SERVICE_ROLE_KEY, {
   auth: { autoRefreshToken: false, persistSession: false },
 });
 
-const TEST_PROJECT_KEYS = ["TRLSA", "TRLSB", "TRLSC", "TRLSD", "TRLSE"];
+const TEST_PROJECT_KEYS = ["TRLSA", "TRLSB", "TRLSC", "TRLSD", "TRLSE", "TE2E"];
 
 async function main() {
   let removed = 0;
@@ -56,7 +56,7 @@ async function main() {
   const { data: strayBugs } = await supabase
     .from("bugs")
     .select("id, title")
-    .like("title", "TEST_RLS%");
+    .or("title.like.TEST_RLS%,title.like.TEST_E2E%");
   if (strayBugs?.length) {
     await supabase
       .from("bugs")

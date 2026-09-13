@@ -45,6 +45,7 @@ export function StatusSelect({ bugId, status }: { bugId: string; status: Bug["st
   return (
     <Select value={current} onValueChange={handleChange} items={STATUS_LABELS}>
       <SelectTrigger
+        data-testid="status-select-trigger"
         disabled={pending}
         className={`border-transparent font-medium ${statusTriggerStyles[current]}`}
       >

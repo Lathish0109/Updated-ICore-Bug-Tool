@@ -138,7 +138,7 @@ export default async function DashboardPage({ searchParams }: PageProps<"/dashbo
             <RangeSelector basePath="/dashboard" value={range.value} />
           </div>
           {stats.hasBugs ? (
-            <div className="mt-4 flex h-32 items-end gap-1.5">
+            <div data-testid="resolution-trend-chart" className="mt-4 flex h-32 items-end gap-1.5">
               {stats.resolutionTrend.map((bucket, i) => (
                 <HoverTooltip
                   key={i}
@@ -146,6 +146,7 @@ export default async function DashboardPage({ searchParams }: PageProps<"/dashbo
                   className="flex h-full flex-1 items-end"
                 >
                   <div
+                    data-testid="resolution-trend-bar"
                     className="min-h-0.5 w-full rounded-t-sm bg-red-500"
                     style={{ height: `${Math.max(bucket.pct, 2)}%` }}
                   />

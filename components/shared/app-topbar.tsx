@@ -71,36 +71,51 @@ export function AppTopbar({
 
   useEffect(() => {
     const supabase = createClient();
-    const channel = supabase
-      .channel(`notifications-${profile.id}`)
-      .on(
-        "postgres_changes",
-        {
-          event: "INSERT",
-          schema: "public",
-          table: "notifications",
-          filter: `recipient_id=eq.${profile.id}`,
-        },
-        (payload) => {
-          const row = payload.new as Tables<"notifications">;
-          const item: NotificationItem = {
-            id: row.id,
-            type: row.type,
-            message: row.message,
-            isRead: row.is_read,
-            bugId: row.bug_id,
-            createdAt: row.created_at,
-            actorName: null,
-          };
-          setItems((prev) => [item, ...prev].slice(0, 10));
-          setUnread((prev) => prev + 1);
-          toast(TYPE_LABELS[item.type], { description: item.message });
-        },
-      )
-      .subscribe();
+    let cancelled = false;
+    let channel: ReturnType<typeof supabase.channel> | undefined;
+
+    // postgres_changes is RLS-gated (recipient_id = auth.uid()), so the
+    // Realtime websocket needs the user's JWT explicitly handed to it --
+    // @supabase/ssr's cookie-hydrated session doesn't always reach the
+    // realtime client's own auth wiring automatically the way a
+    // freshly-called signInWithPassword session does. Without this, the
+    // channel subscribes without erroring but silently never receives a
+    // row, because the server-side RLS check has no auth.uid() to match.
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (cancelled || !session) return;
+      supabase.realtime.setAuth(session.access_token);
+      channel = supabase
+        .channel(`notifications-${profile.id}`)
+        .on(
+          "postgres_changes",
+          {
+            event: "INSERT",
+            schema: "public",
+            table: "notifications",
+            filter: `recipient_id=eq.${profile.id}`,
+          },
+          (payload) => {
+            const row = payload.new as Tables<"notifications">;
+            const item: NotificationItem = {
+              id: row.id,
+              type: row.type,
+              message: row.message,
+              isRead: row.is_read,
+              bugId: row.bug_id,
+              createdAt: row.created_at,
+              actorName: null,
+            };
+            setItems((prev) => [item, ...prev].slice(0, 10));
+            setUnread((prev) => prev + 1);
+            toast(TYPE_LABELS[item.type], { description: item.message });
+          },
+        )
+        .subscribe();
+    });
 
     return () => {
-      supabase.removeChannel(channel);
+      cancelled = true;
+      if (channel) supabase.removeChannel(channel);
     };
   }, [profile.id]);
 

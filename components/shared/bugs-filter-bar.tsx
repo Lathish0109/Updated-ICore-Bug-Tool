@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Search } from "lucide-react";
 
@@ -21,7 +21,6 @@ export function BugsFilterBar({ projects }: { projects: { id: string; name: stri
   const searchParams = useSearchParams();
 
   const [search, setSearch] = useState(searchParams.get("q") ?? "");
-  const isFirstRender = useRef(true);
 
   function pushParams(overrides: Record<string, string | null>) {
     const params = new URLSearchParams(searchParams.toString());
@@ -34,11 +33,16 @@ export function BugsFilterBar({ projects }: { projects: { id: string; name: stri
   }
 
   useEffect(() => {
-    if (isFirstRender.current) {
-      isFirstRender.current = false;
-      return;
-    }
-    const timeout = setTimeout(() => pushParams({ q: search || null }), 300);
+    // Debounced search-as-you-type. Guarded by a value check (not a
+    // mount-order ref) so this is a no-op both on mount and under React
+    // Strict Mode's double-invoked effects in dev -- a ref-based
+    // "isFirstRender" guard can slip past its own check on the second
+    // invocation and fire a spurious navigation a moment after mount.
+    const timeout = setTimeout(() => {
+      const currentQ = searchParams.get("q") ?? "";
+      if (currentQ === search) return;
+      pushParams({ q: search || null });
+    }, 300);
     return () => clearTimeout(timeout);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [search]);
