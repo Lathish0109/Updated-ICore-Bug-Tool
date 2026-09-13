@@ -7,6 +7,7 @@ import {
   STATUS_LABELS,
   type Bug,
 } from "@/lib/bug-constants";
+import { csvEscape } from "@/lib/csv";
 
 export type BugExportFilters = {
   projectId?: string;
@@ -46,14 +47,6 @@ const HEADER = [
   "Created At",
   "Updated At",
 ];
-
-function csvEscape(value: unknown): string {
-  const str = String(value ?? "");
-  if (/[",\r\n]/.test(str)) {
-    return `"${str.replace(/"/g, '""')}"`;
-  }
-  return str;
-}
 
 export async function exportBugsCsv(filters: BugExportFilters): Promise<string> {
   const supabase = await createClient();
