@@ -90,7 +90,7 @@ export function UsersList({
           onValueChange={(v) => setRole(v as string)}
           items={{ "all-roles": "All Roles", ...roleLabels }}
         >
-          <SelectTrigger className="w-36">
+          <SelectTrigger data-testid="role-filter-trigger" className="w-36">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -107,7 +107,7 @@ export function UsersList({
           onValueChange={(v) => setStatus(v as string)}
           items={{ "all-status": "All Status", active: "Active", inactive: "Inactive" }}
         >
-          <SelectTrigger className="w-36">
+          <SelectTrigger data-testid="status-filter-trigger" className="w-36">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
