@@ -158,6 +158,7 @@ type CreateBugInput = Pick<
   | "priority"
   | "source"
   | "assignee_id"
+  | "image_url"
 > & { labels: BugLabel[] };
 
 export async function createBug(input: CreateBugInput) {
@@ -212,6 +213,7 @@ type UpdateBugInput = Pick<
   | "priority"
   | "source"
   | "assignee_id"
+  | "image_url"
 > & { labels: BugLabel[] };
 
 export async function updateBug(bugId: string, input: UpdateBugInput) {
@@ -359,6 +361,32 @@ export async function updateBugStatus(bugId: string, status: Bug["status"]) {
   }
 
   return { error: null };
+}
+
+export async function setBugImageFromFile(bugId: string, file: File) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "Not signed in." };
+
+  if (!file.type.startsWith("image/")) {
+    return { error: `"${file.name}" is not an image file.` };
+  }
+  if (file.size > MAX_ATTACHMENT_SIZE_BYTES) {
+    return { error: `"${file.name}" exceeds the 20MB limit.` };
+  }
+
+  const path = `${bugId}/image-${Date.now()}-${file.name}`;
+  const { error: uploadError } = await supabase.storage.from("bug-images").upload(path, file);
+  if (uploadError) return { error: "Couldn't upload image." };
+
+  const {
+    data: { publicUrl },
+  } = supabase.storage.from("bug-images").getPublicUrl(path);
+
+  const { error } = await supabase.from("bugs").update({ image_url: publicUrl }).eq("id", bugId);
+  return { error: error ? "Couldn't save image." : null };
 }
 
 export async function addAttachment(bugId: string, file: File) {

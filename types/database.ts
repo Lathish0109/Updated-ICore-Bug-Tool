@@ -216,6 +216,7 @@ export type Database = {
           created_at: string;
           expected_result: string | null;
           id: string;
+          image_url: string | null;
           priority: Database["public"]["Enums"]["bug_priority"];
           project_id: string;
           reporter_id: string;
@@ -234,6 +235,7 @@ export type Database = {
           created_at?: string;
           expected_result?: string | null;
           id?: string;
+          image_url?: string | null;
           priority?: Database["public"]["Enums"]["bug_priority"];
           project_id: string;
           reporter_id: string;
@@ -252,6 +254,7 @@ export type Database = {
           created_at?: string;
           expected_result?: string | null;
           id?: string;
+          image_url?: string | null;
           priority?: Database["public"]["Enums"]["bug_priority"];
           project_id?: string;
           reporter_id?: string;

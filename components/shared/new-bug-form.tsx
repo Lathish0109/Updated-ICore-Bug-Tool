@@ -3,7 +3,7 @@
 import { useActionState, useRef, useState, type ChangeEvent, type DragEvent } from "react";
 import { useRouter } from "next/navigation";
 
-import { Paperclip, Save, Upload, X } from "lucide-react";
+import { ImageIcon, Link2, Paperclip, Save, Upload, X } from "lucide-react";
 import { toast } from "sonner";
 
 import { Badge } from "@/components/ui/badge";
@@ -52,6 +52,7 @@ export type BugFormValues = {
   expected: string;
   actual: string;
   context: string;
+  imageUrl?: string | null;
 };
 
 export function NewBugForm({
@@ -74,6 +75,12 @@ export function NewBugForm({
   const [files, setFiles] = useState<File[]>([]);
   const [labels, setLabels] = useState<BugLabel[]>(defaultValues?.labels ?? []);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [imageMode, setImageMode] = useState<"upload" | "url">(
+    defaultValues?.imageUrl ? "url" : "upload",
+  );
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imageUrl, setImageUrl] = useState(defaultValues?.imageUrl ?? "");
+  const imageInputRef = useRef<HTMLInputElement>(null);
 
   // Every Select field below is fully controlled with its own explicit
   // hidden <input>, rather than relying on Base UI Select's built-in
@@ -362,6 +369,107 @@ export function NewBugForm({
             placeholder="Environment details, browser versions, related tickets..."
             defaultValue={defaultValues?.context}
           />
+        </div>
+
+        <div className="space-y-1.5">
+          <Label>Image URL</Label>
+          <div className="border-border bg-muted inline-flex gap-1 rounded-lg border p-1">
+            <button
+              type="button"
+              aria-pressed={imageMode === "upload"}
+              onClick={() => setImageMode("upload")}
+              className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
+                imageMode === "upload"
+                  ? "bg-card text-foreground shadow-sm"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              <Upload className="size-4" /> Upload from device
+            </button>
+            <button
+              type="button"
+              aria-pressed={imageMode === "url"}
+              onClick={() => setImageMode("url")}
+              className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
+                imageMode === "url"
+                  ? "bg-card text-foreground shadow-sm"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              <Link2 className="size-4" /> Paste image URL
+            </button>
+          </div>
+
+          {imageMode === "upload" ? (
+            <div className="space-y-2">
+              <div className="border-border flex items-center gap-3 rounded-lg border-2 border-dashed p-4">
+                <ImageIcon className="text-muted-foreground size-5 shrink-0" />
+                <div className="min-w-0 flex-1">
+                  {imageFile ? (
+                    <p className="truncate text-sm">{imageFile.name}</p>
+                  ) : (
+                    <p className="text-muted-foreground text-sm">No image selected</p>
+                  )}
+                </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  render={<label htmlFor="image" />}
+                >
+                  Choose Image
+                </Button>
+                {imageFile ? (
+                  <button
+                    type="button"
+                    aria-label="Remove image"
+                    onClick={() => {
+                      setImageFile(null);
+                      if (imageInputRef.current) imageInputRef.current.value = "";
+                    }}
+                  >
+                    <X className="text-muted-foreground hover:text-foreground size-4" />
+                  </button>
+                ) : null}
+              </div>
+              <input
+                id="image"
+                name="image"
+                ref={imageInputRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={(e: ChangeEvent<HTMLInputElement>) =>
+                  setImageFile(e.target.files?.[0] ?? null)
+                }
+              />
+            </div>
+          ) : (
+            <div className="space-y-2">
+              <Input
+                id="imageUrl"
+                name="imageUrl"
+                type="url"
+                placeholder="https://example.com/screenshot.png"
+                value={imageUrl}
+                onChange={(e) => setImageUrl(e.target.value)}
+              />
+              {imageUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element -- previewing an arbitrary external URL, not a local/optimizable asset
+                <img
+                  src={imageUrl}
+                  alt="Preview"
+                  className="border-border h-32 rounded-md border object-cover"
+                  onError={(e) => {
+                    e.currentTarget.style.display = "none";
+                  }}
+                  onLoad={(e) => {
+                    e.currentTarget.style.display = "block";
+                  }}
+                />
+              ) : null}
+            </div>
+          )}
         </div>
 
         <div className="space-y-1.5">

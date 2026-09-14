@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
-import { addAttachment, updateBug, type BugLabel } from "@/services/bugs";
+import { addAttachment, setBugImageFromFile, updateBug, type BugLabel } from "@/services/bugs";
 import type { Tables } from "@/types/database";
 
 export async function updateBugFormAction(
@@ -22,6 +22,8 @@ export async function updateBugFormAction(
   const context = (formData.get("context") as string)?.trim() || null;
   const labels = formData.getAll("labels") as BugLabel[];
   const files = formData.getAll("attachments") as File[];
+  const imageUrl = (formData.get("imageUrl") as string)?.trim() || null;
+  const imageFile = formData.get("image") as File | null;
 
   if (!title || !severity || !steps) {
     return { error: "Title, severity, and steps to reproduce are required." };
@@ -37,10 +39,15 @@ export async function updateBugFormAction(
     expected_result: expected,
     actual_result: actual,
     additional_context: context,
+    image_url: imageUrl,
     labels,
   });
 
   if (error) return { error };
+
+  if (imageFile && imageFile.size > 0) {
+    await setBugImageFromFile(bugId, imageFile);
+  }
 
   for (const file of files) {
     if (file.size > 0) {

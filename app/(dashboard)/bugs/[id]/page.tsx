@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { History, Paperclip, Pencil } from "lucide-react";
+import { History, ImageIcon, Paperclip, Pencil } from "lucide-react";
 import { notFound } from "next/navigation";
 
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -89,6 +89,23 @@ export default async function BugDetailPage({ params }: PageProps<"/bugs/[id]">)
           <p className="mt-1 text-sm font-medium">{SOURCE_LABELS[bug.source]}</p>
         </div>
       </div>
+
+      {bug.image_url ? (
+        <div className="border-border bg-card rounded-lg border p-5">
+          <p className="text-muted-foreground flex items-center gap-1.5 text-xs font-medium tracking-wide uppercase">
+            <ImageIcon className="size-3.5" />
+            Image
+          </p>
+          <a href={bug.image_url} target="_blank" rel="noreferrer">
+            {/* eslint-disable-next-line @next/next/no-img-element -- arbitrary external/storage URL, not a local/optimizable asset */}
+            <img
+              src={bug.image_url}
+              alt="Bug screenshot"
+              className="border-border mt-3 max-h-96 rounded-md border object-contain"
+            />
+          </a>
+        </div>
+      ) : null}
 
       <div className="border-border bg-card space-y-4 rounded-lg border p-5">
         <div>

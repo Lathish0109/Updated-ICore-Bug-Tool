@@ -51,6 +51,7 @@ export default async function EditBugPage({ params }: PageProps<"/bugs/[id]/edit
         expected: bug.expected_result ?? "",
         actual: bug.actual_result ?? "",
         context: bug.additional_context ?? "",
+        imageUrl: bug.image_url,
       }}
     />
   );
