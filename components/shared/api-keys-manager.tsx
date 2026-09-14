@@ -81,7 +81,10 @@ export function ApiKeysManager({
             Copy it now -- for your security, this is the only time it will ever be shown.
           </p>
           <div className="flex items-center gap-2">
-            <code className="bg-background border-border flex-1 truncate rounded-md border px-3 py-2 text-sm">
+            <code
+              data-testid="revealed-api-key"
+              className="bg-background border-border flex-1 truncate rounded-md border px-3 py-2 text-sm"
+            >
               {revealedKey}
             </code>
             <Button type="button" variant="outline" size="icon" onClick={copyKey} aria-label="Copy key">
@@ -117,13 +120,13 @@ export function ApiKeysManager({
             />
           </div>
           <div className="space-y-1.5">
-            <Label>Project</Label>
+            <Label htmlFor="key-project">Project</Label>
             <Select
               value={projectId}
               onValueChange={(v) => setProjectId((v as string) ?? "")}
               items={Object.fromEntries(projects.map((p) => [p.id, p.name]))}
             >
-              <SelectTrigger className="w-full">
+              <SelectTrigger id="key-project" className="w-full">
                 <SelectValue placeholder="Select project..." />
               </SelectTrigger>
               <SelectContent>
