@@ -12,6 +12,7 @@ import {
   Settings,
   UserRound,
   Users,
+  Webhook,
   X,
 } from "lucide-react";
 
@@ -31,6 +32,7 @@ const navItems: {
   { href: "/bugs", label: "Bugs", icon: Bug },
   { href: "/reports", label: "Reports", icon: BarChart3 },
   { href: "/users", label: "Users", icon: Users, roles: ["admin"] },
+  { href: "/settings/api-keys", label: "Automation API", icon: Webhook, roles: ["admin"] },
   { href: "/settings", label: "Settings", icon: Settings },
   { href: "/profile", label: "Profile", icon: UserRound },
 ];
@@ -58,6 +60,13 @@ export function AppSidebar({
     (item) => !item.roles || item.roles.includes(profile.role),
   );
   const canCreateBugs = profile.role !== "viewer";
+
+  // Pick the longest matching href so a more specific item (e.g.
+  // /settings/api-keys) wins over a shared prefix (e.g. /settings).
+  const bestMatchHref = visibleNavItems
+    .filter((item) => pathname === item.href || pathname.startsWith(`${item.href}/`))
+    .map((item) => item.href)
+    .sort((a, b) => b.length - a.length)[0];
 
   return (
     <>
@@ -104,7 +113,7 @@ export function AppSidebar({
 
         <nav aria-label="Primary" className="flex-1 space-y-1 px-3 pt-6">
           {visibleNavItems.map(({ href, label, icon: Icon }) => {
-            const active = pathname === href || pathname.startsWith(`${href}/`);
+            const active = href === bestMatchHref;
             return (
               <Link
                 key={href}

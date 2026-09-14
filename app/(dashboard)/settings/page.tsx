@@ -37,9 +37,9 @@ export default async function SettingsPage() {
           <div className="flex items-center gap-3">
             <KeyRound className="text-muted-foreground size-5" />
             <div>
-              <h2 className="text-sm font-semibold">API Keys</h2>
+              <h2 className="text-sm font-semibold">Automation API</h2>
               <p className="text-muted-foreground text-sm">
-                Let external tools like Playwright file bugs automatically.
+                Generate keys and see setup instructions for connecting Playwright.
               </p>
             </div>
           </div>

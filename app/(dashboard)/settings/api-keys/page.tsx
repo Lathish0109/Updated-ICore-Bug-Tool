@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 
+import { ApiIntegrationGuide } from "@/components/shared/api-integration-guide";
 import { ApiKeysManager } from "@/components/shared/api-keys-manager";
 import { getCurrentProfile } from "@/services/profile";
 import { getApiKeys } from "@/services/api-keys";
@@ -14,12 +15,12 @@ export default async function ApiKeysPage() {
   const [keys, projects] = await Promise.all([getApiKeys(), getAllProjectsBasic()]);
 
   return (
-    <div className="max-w-2xl space-y-6">
+    <div className="max-w-2xl space-y-10">
       <div>
         <p className="text-muted-foreground text-sm">
-          <span>Settings</span> <span className="mx-1">&gt;</span> <span>API Keys</span>
+          <span>Settings</span> <span className="mx-1">&gt;</span> <span>Automation API</span>
         </p>
-        <h1 className="text-2xl font-semibold tracking-tight">API Keys</h1>
+        <h1 className="text-2xl font-semibold tracking-tight">Automation API</h1>
         <p className="text-muted-foreground mt-1 text-sm">
           Lets an external tool (a Playwright test run, a CI job) file bugs directly into a
           project. Each key is scoped to one project and reports bugs as{" "}
@@ -28,6 +29,14 @@ export default async function ApiKeysPage() {
       </div>
 
       <ApiKeysManager keys={keys} projects={projects} />
+
+      <div className="border-border border-t pt-6">
+        <h2 className="text-lg font-semibold tracking-tight">Connect a Playwright project</h2>
+        <p className="text-muted-foreground mt-1 mb-4 text-sm">
+          Step-by-step instructions for wiring an external Playwright suite up to this tracker.
+        </p>
+        <ApiIntegrationGuide />
+      </div>
     </div>
   );
 }
