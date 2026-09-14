@@ -8,6 +8,57 @@ export type Database = {
   };
   public: {
     Tables: {
+      api_keys: {
+        Row: {
+          id: string;
+          name: string;
+          key_hash: string;
+          key_prefix: string;
+          project_id: string;
+          created_by: string;
+          created_at: string;
+          last_used_at: string | null;
+          revoked_at: string | null;
+        };
+        Insert: {
+          id?: string;
+          name: string;
+          key_hash: string;
+          key_prefix: string;
+          project_id: string;
+          created_by: string;
+          created_at?: string;
+          last_used_at?: string | null;
+          revoked_at?: string | null;
+        };
+        Update: {
+          id?: string;
+          name?: string;
+          key_hash?: string;
+          key_prefix?: string;
+          project_id?: string;
+          created_by?: string;
+          created_at?: string;
+          last_used_at?: string | null;
+          revoked_at?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "api_keys_project_id_fkey";
+            columns: ["project_id"];
+            isOneToOne: false;
+            referencedRelation: "projects";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "api_keys_created_by_fkey";
+            columns: ["created_by"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       bug_activity: {
         Row: {
           action: string;

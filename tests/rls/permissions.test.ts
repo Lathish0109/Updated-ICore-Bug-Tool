@@ -12,7 +12,9 @@ import {
   createServiceClient,
   seedFixtures,
   signInAs,
+  TEST_PREFIX,
   type Fixtures,
+  type TestUserKey,
 } from "./setup";
 
 type Client = SupabaseClient<Database>;
@@ -315,5 +317,60 @@ describe("Profiles (the admin-seeded model's actual enforcement)", () => {
     const { data, error } = await viewer.from("profiles").select("id").limit(1);
     expect(error).toBeNull();
     expect(data).not.toBeNull();
+  });
+});
+
+describe("API Keys (external automation integration, admin-only trust boundary)", () => {
+  it("only Admin can read the api_keys table -- Manager/Developer/Tester/Viewer see nothing", async () => {
+    for (const [label, client] of Object.entries({ manager, developer, tester, viewer })) {
+      const { data, error } = await client.from("api_keys").select("id");
+      expect(error, `${label} query should not error (RLS just filters rows)`).toBeNull();
+      expect(data, `${label} should see zero api_keys rows`).toEqual([]);
+    }
+
+    const { data: adminData, error: adminError } = await admin.from("api_keys").select("id");
+    expect(adminError).toBeNull();
+    expect(adminData).not.toBeNull();
+  });
+
+  it("only Admin can INSERT into api_keys -- other roles are rejected by RLS", async () => {
+    for (const [label, client] of Object.entries({ manager, developer, tester, viewer })) {
+      const { error } = await client.from("api_keys").insert({
+        name: `${TEST_PREFIX} should not be created by ${label}`,
+        key_hash: `${TEST_PREFIX}-${label}-hash`,
+        key_prefix: "ibt_live_",
+        project_id: fixtures.projectAId,
+        created_by: fixtures.users[label as TestUserKey].id,
+      });
+      expect(error, `${label} should not be able to insert an api_key`).not.toBeNull();
+    }
+  });
+
+  it("Admin can create and revoke an api_key end-to-end", async () => {
+    const { data: created, error: createError } = await admin
+      .from("api_keys")
+      .insert({
+        name: `${TEST_PREFIX} admin-created key`,
+        key_hash: `${TEST_PREFIX}-admin-hash`,
+        key_prefix: "ibt_live_",
+        project_id: fixtures.projectAId,
+        created_by: fixtures.users.developer.id,
+      })
+      .select("id")
+      .single();
+    expect(createError).toBeNull();
+    expect(created?.id).toBeDefined();
+    if (!created) return;
+
+    const { data: revoked, error: revokeError } = await admin
+      .from("api_keys")
+      .update({ revoked_at: new Date().toISOString() })
+      .eq("id", created.id)
+      .select("revoked_at")
+      .single();
+    expect(revokeError).toBeNull();
+    expect(revoked?.revoked_at).not.toBeNull();
+
+    await admin.from("api_keys").delete().eq("id", created.id);
   });
 });

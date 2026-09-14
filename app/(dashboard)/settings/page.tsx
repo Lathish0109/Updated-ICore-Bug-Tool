@@ -1,4 +1,6 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
+import { ChevronRight, KeyRound } from "lucide-react";
 
 import { NotificationPreferencesForm } from "@/components/shared/notification-preferences-form";
 import { getCurrentProfile } from "@/services/profile";
@@ -26,6 +28,24 @@ export default async function SettingsPage() {
         <h2 className="text-sm font-semibold">Notification Preferences</h2>
         <NotificationPreferencesForm initialPrefs={initialPrefs} />
       </section>
+
+      {profile.role === "admin" ? (
+        <Link
+          href="/settings/api-keys"
+          className="border-border bg-card hover:border-primary/40 flex items-center justify-between rounded-lg border p-6 transition-colors"
+        >
+          <div className="flex items-center gap-3">
+            <KeyRound className="text-muted-foreground size-5" />
+            <div>
+              <h2 className="text-sm font-semibold">API Keys</h2>
+              <p className="text-muted-foreground text-sm">
+                Let external tools like Playwright file bugs automatically.
+              </p>
+            </div>
+          </div>
+          <ChevronRight className="text-muted-foreground size-4" />
+        </Link>
+      ) : null}
     </div>
   );
 }

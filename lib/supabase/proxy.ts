@@ -2,8 +2,17 @@ import { NextResponse, type NextRequest } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 
 const PUBLIC_PATHS = ["/login"];
+// Authenticated by its own Bearer API key, not a Supabase session cookie --
+// external callers (CI, another IDE's Playwright run) have no cookies at
+// all, so this must never redirect to the HTML /login page.
+const PUBLIC_PATH_PREFIXES = ["/api/v1/"];
 
 export async function updateSession(request: NextRequest) {
+  const { pathname } = request.nextUrl;
+  if (PUBLIC_PATH_PREFIXES.some((prefix) => pathname.startsWith(prefix))) {
+    return NextResponse.next({ request });
+  }
+
   let response = NextResponse.next({ request });
 
   const supabase = createServerClient(
@@ -29,7 +38,6 @@ export async function updateSession(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  const { pathname } = request.nextUrl;
   const isPublicPath = PUBLIC_PATHS.includes(pathname);
 
   if (!user && !isPublicPath) {
