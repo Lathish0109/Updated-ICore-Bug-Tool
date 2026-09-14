@@ -1,9 +1,85 @@
 "use client";
 
-import { useState } from "react";
+import { Fragment, useState, type ReactNode } from "react";
 import { Check, Copy } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+
+const KEYWORDS = new Set([
+  "import",
+  "export",
+  "default",
+  "const",
+  "let",
+  "var",
+  "function",
+  "async",
+  "await",
+  "return",
+  "if",
+  "else",
+  "type",
+  "interface",
+  "from",
+  "new",
+  "typeof",
+  "extends",
+  "test",
+  "expect",
+  "throw",
+  "try",
+  "catch",
+  "true",
+  "false",
+  "null",
+  "undefined",
+  "void",
+]);
+
+// Comments, strings, and bare words -- good enough for the short JS/TS/bash
+// snippets on this page. Not a real tokenizer; don't reach for this to
+// highlight arbitrary source files.
+const TOKEN_PATTERN = /(\/\/[^\n]*|#[^\n]*)|(`[^`]*`|"[^"]*"|'[^']*')|([A-Za-z_$][\w$]*)/g;
+
+function highlight(code: string) {
+  const nodes: ReactNode[] = [];
+  let lastIndex = 0;
+  let match: RegExpExecArray | null;
+  let key = 0;
+
+  while ((match = TOKEN_PATTERN.exec(code)) !== null) {
+    if (match.index > lastIndex) {
+      nodes.push(<Fragment key={key++}>{code.slice(lastIndex, match.index)}</Fragment>);
+    }
+    const [full, comment, string, word] = match;
+    if (comment) {
+      nodes.push(
+        <span key={key++} className="text-slate-500">
+          {comment}
+        </span>,
+      );
+    } else if (string) {
+      nodes.push(
+        <span key={key++} className="text-lime-400">
+          {string}
+        </span>,
+      );
+    } else if (word && KEYWORDS.has(word)) {
+      nodes.push(
+        <span key={key++} className="text-cyan-400">
+          {word}
+        </span>,
+      );
+    } else {
+      nodes.push(<Fragment key={key++}>{full}</Fragment>);
+    }
+    lastIndex = match.index + full.length;
+  }
+  if (lastIndex < code.length) {
+    nodes.push(<Fragment key={key++}>{code.slice(lastIndex)}</Fragment>);
+  }
+  return nodes;
+}
 
 function CodeBlock({ code, language }: { code: string; language?: string }) {
   const [copied, setCopied] = useState(false);
@@ -15,9 +91,9 @@ function CodeBlock({ code, language }: { code: string; language?: string }) {
   }
 
   return (
-    <div className="border-border bg-muted/40 relative rounded-md border">
-      <div className="border-border flex items-center justify-between border-b px-3 py-1.5">
-        <span className="text-muted-foreground text-xs font-medium">{language ?? "code"}</span>
+    <div className="relative rounded-md border border-[#1c2c52] bg-[#0a1128]">
+      <div className="flex items-center justify-between border-b border-[#1c2c52] px-3 py-1.5">
+        <span className="text-xs font-medium text-slate-400">{language ?? "code"}</span>
         <Button
           type="button"
           variant="ghost"
@@ -25,11 +101,11 @@ function CodeBlock({ code, language }: { code: string; language?: string }) {
           aria-label="Copy code"
           onClick={handleCopy}
         >
-          {copied ? <Check className="text-emerald-600" /> : <Copy />}
+          {copied ? <Check className="text-emerald-400" /> : <Copy className="text-slate-400" />}
         </Button>
       </div>
-      <pre className="overflow-x-auto px-3 py-3 text-xs leading-relaxed">
-        <code>{code}</code>
+      <pre className="overflow-x-auto px-3 py-3 text-xs leading-relaxed text-slate-200">
+        <code>{highlight(code)}</code>
       </pre>
     </div>
   );

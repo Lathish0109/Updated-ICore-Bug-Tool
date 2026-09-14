@@ -7,23 +7,23 @@ import { Badge } from "@/components/ui/badge";
 import { EmptyState } from "@/components/shared/empty-state";
 import { HoverTooltip } from "@/components/shared/hover-tooltip";
 import { RangeSelector } from "@/components/shared/range-selector";
-import { displayId, PRIORITY_LABELS, STATUS_LABELS } from "@/lib/bug-constants";
+import { displayId, PRIORITY_LABELS, SOURCE_LABELS, STATUS_LABELS } from "@/lib/bug-constants";
 import { resolveRange } from "@/lib/date-range";
 import { getBugs } from "@/services/bugs";
 import { getDashboardStats } from "@/services/dashboard";
 
 const priorityStyles: Record<string, string> = {
-  p1: "bg-red-600 text-white",
-  p2: "bg-red-100 text-red-700",
-  p3: "bg-blue-100 text-blue-700",
-  p4: "bg-slate-100 text-slate-600",
+  p1: "bg-[#ff6f61] text-white",
+  p2: "bg-[#ff6f61]/15 text-[#ff6f61]",
+  p3: "bg-violet-500/15 text-violet-300",
+  p4: "bg-slate-500/15 text-slate-400",
 };
 
 const statusStyles: Record<string, string> = {
-  open: "bg-red-50 text-red-600",
-  in_progress: "bg-blue-50 text-blue-600",
-  resolved: "bg-blue-100 text-blue-700",
-  closed: "bg-emerald-100 text-emerald-700",
+  open: "bg-[#ff6f61]/15 text-[#ff6f61]",
+  in_progress: "bg-amber-500/15 text-amber-400",
+  resolved: "bg-cyan-500/15 text-cyan-300",
+  closed: "bg-emerald-500/15 text-emerald-400",
 };
 
 function Card({ children, className = "" }: { children: ReactNode; className?: string }) {
@@ -147,7 +147,7 @@ export default async function DashboardPage({ searchParams }: PageProps<"/dashbo
                 >
                   <div
                     data-testid="resolution-trend-bar"
-                    className="min-h-0.5 w-full rounded-t-sm bg-red-500"
+                    className="min-h-0.5 w-full rounded-t-sm bg-cyan-400"
                     style={{ height: `${Math.max(bucket.pct, 2)}%` }}
                   />
                 </HoverTooltip>
@@ -217,8 +217,14 @@ export default async function DashboardPage({ searchParams }: PageProps<"/dashbo
                         {STATUS_LABELS[bug.status]}
                       </Badge>
                     </td>
-                    <td className="text-muted-foreground px-5 py-3 capitalize">
-                      {bug.source.replace("_", " ")}
+                    <td className="px-5 py-3">
+                      {bug.source === "automation" ? (
+                        <Badge variant="outline" className="border-transparent bg-indigo-500/15 text-indigo-300">
+                          {SOURCE_LABELS[bug.source]}
+                        </Badge>
+                      ) : (
+                        <span className="text-muted-foreground text-xs">{SOURCE_LABELS[bug.source]}</span>
+                      )}
                     </td>
                   </tr>
                 ))}

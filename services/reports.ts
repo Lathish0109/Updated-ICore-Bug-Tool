@@ -2,7 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { SOURCE_LABELS, type Bug } from "@/lib/bug-constants";
 
 const SOURCE_COLORS: Record<Bug["source"], string> = {
-  automation: "bg-red-500",
+  automation: "bg-indigo-500",
   manual: "bg-blue-500",
   user_reported: "bg-amber-500",
 };

@@ -14,6 +14,7 @@ import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
+  DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
@@ -156,7 +157,7 @@ export function AppTopbar({
                 {unread > 0 && (
                   <Badge
                     variant="outline"
-                    className="absolute top-0.5 right-0.5 h-4 min-w-4 justify-center border-transparent bg-red-500 px-1 text-[0.65rem] text-white"
+                    className="absolute top-0.5 right-0.5 h-4 min-w-4 justify-center border-transparent bg-[#ff6f61] px-1 text-[0.65rem] text-white"
                   >
                     {unread > 9 ? "9+" : unread}
                   </Badge>
@@ -165,7 +166,9 @@ export function AppTopbar({
             }
           />
           <DropdownMenuContent align="end" className="w-80">
-            <DropdownMenuLabel>Notifications</DropdownMenuLabel>
+            <DropdownMenuGroup>
+              <DropdownMenuLabel>Notifications</DropdownMenuLabel>
+            </DropdownMenuGroup>
             <DropdownMenuSeparator />
             {items.length === 0 ? (
               <p className="text-muted-foreground px-2 py-4 text-center text-sm">

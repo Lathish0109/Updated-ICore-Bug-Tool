@@ -12,8 +12,8 @@ import { PaginationControls } from "@/components/shared/pagination-controls";
 import type { ProjectWithStats } from "@/services/projects";
 
 const statusStyles = {
-  active: "bg-emerald-100 text-emerald-700",
-  archived: "bg-slate-100 text-slate-600",
+  active: "bg-emerald-500/15 text-emerald-400",
+  archived: "bg-slate-500/15 text-slate-400",
 };
 
 type Tab = "All" | "Active" | "Archived";

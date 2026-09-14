@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { ChevronRight, KeyRound } from "lucide-react";
 
 import { NotificationPreferencesForm } from "@/components/shared/notification-preferences-form";
+import { ThemeToggle } from "@/components/shared/theme-toggle";
 import { getCurrentProfile } from "@/services/profile";
 import type { NotificationType } from "@/services/notifications";
 
@@ -23,6 +24,12 @@ export default async function SettingsPage() {
           Manage your account and workspace preferences.
         </p>
       </div>
+
+      <section className="border-border bg-card space-y-3 rounded-lg border p-6">
+        <h2 className="text-sm font-semibold">Theme</h2>
+        <p className="text-muted-foreground text-sm">Choose how ICore Tracker looks on this device.</p>
+        <ThemeToggle />
+      </section>
 
       <section className="border-border bg-card space-y-3 rounded-lg border p-6">
         <h2 className="text-sm font-semibold">Notification Preferences</h2>

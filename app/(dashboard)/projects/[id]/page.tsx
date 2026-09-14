@@ -10,10 +10,10 @@ import { getCurrentProfile } from "@/services/profile";
 import { getProject } from "@/services/projects";
 
 const statusStyles: Record<string, string> = {
-  open: "bg-red-50 text-red-600",
-  in_progress: "bg-blue-50 text-blue-600",
-  resolved: "bg-blue-100 text-blue-700",
-  closed: "bg-emerald-100 text-emerald-700",
+  open: "bg-[#ff6f61]/15 text-[#ff6f61]",
+  in_progress: "bg-amber-500/15 text-amber-400",
+  resolved: "bg-cyan-500/15 text-cyan-300",
+  closed: "bg-emerald-500/15 text-emerald-400",
 };
 
 export default async function ProjectDetailPage({ params }: PageProps<"/projects/[id]">) {

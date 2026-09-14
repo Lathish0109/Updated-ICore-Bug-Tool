@@ -102,7 +102,7 @@ export default async function ReportsPage({ searchParams }: PageProps<"/reports"
                     >
                       <div
                         data-testid="opened-bar"
-                        className="min-h-0.5 w-full rounded-t-sm bg-red-500"
+                        className="min-h-0.5 w-full rounded-t-sm bg-[#ff6f61]"
                         style={{ height: `${Math.max(bucket.openedPct, 2)}%` }}
                       />
                     </HoverTooltip>
@@ -120,7 +120,7 @@ export default async function ReportsPage({ searchParams }: PageProps<"/reports"
               </div>
               <div className="text-muted-foreground mt-3 flex gap-4 text-xs">
                 <span className="flex items-center gap-1.5">
-                  <span className="size-2 rounded-full bg-red-500" /> Opened
+                  <span className="size-2 rounded-full bg-[#ff6f61]" /> Opened
                 </span>
                 <span className="flex items-center gap-1.5">
                   <span className="size-2 rounded-full bg-emerald-400" /> Closed

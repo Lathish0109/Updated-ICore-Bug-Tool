@@ -187,11 +187,11 @@ export function ApiKeysManager({
                   </td>
                   <td className="px-5 py-3">
                     {key.revokedAt ? (
-                      <Badge variant="outline" className="border-transparent bg-slate-100 text-slate-600">
+                      <Badge variant="outline" className="border-transparent bg-slate-500/15 text-slate-400">
                         Revoked
                       </Badge>
                     ) : (
-                      <Badge variant="outline" className="border-transparent bg-emerald-100 text-emerald-700">
+                      <Badge variant="outline" className="border-transparent bg-emerald-500/15 text-emerald-400">
                         Active
                       </Badge>
                     )}

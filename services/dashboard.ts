@@ -2,10 +2,10 @@ import { createClient } from "@/lib/supabase/server";
 import { PRIORITY_LABELS, type Bug } from "@/lib/bug-constants";
 
 const BUG_STATUS_STYLES: Record<Bug["status"], string> = {
-  open: "bg-red-500",
+  open: "bg-[#ff6f61]",
   in_progress: "bg-amber-500",
-  resolved: "bg-blue-500",
-  closed: "bg-slate-400",
+  resolved: "bg-cyan-400",
+  closed: "bg-slate-500",
 };
 
 const TREND_BUCKETS = 10;
