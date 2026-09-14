@@ -92,6 +92,7 @@ export default async function globalSetup() {
   await service.from("project_members").insert([
     { project_id: project.id, user_id: userIds.developer },
     { project_id: project.id, user_id: userIds.tester },
+    { project_id: project.id, user_id: userIds.viewer },
     // Manager membership isn't required for RLS (managers bypass
     // membership checks) but the @mention scan in addComment() queries
     // project_members directly, so a mention target needs a real row here.
@@ -109,6 +110,7 @@ export default async function globalSetup() {
     ["manager", E2E_USER_DEFS.manager.email, E2E_USER_PASSWORD],
     ["developer", E2E_USER_DEFS.developer.email, E2E_USER_PASSWORD],
     ["tester", E2E_USER_DEFS.tester.email, E2E_USER_PASSWORD],
+    ["viewer", E2E_USER_DEFS.viewer.email, E2E_USER_PASSWORD],
   ];
   for (const [name, email, password] of roles) {
     const page = await browser.newPage({ baseURL: "http://localhost:3000" });
